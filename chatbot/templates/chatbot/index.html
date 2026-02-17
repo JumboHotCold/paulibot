@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PauliBot | SPUS Assistant</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'chatbot/style.css' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="chat-header">
+            <div class="logo-area">
+                <div class="logo-circle">
+                    <span class="logo-text">P</span>
+                </div>
+                <div class="header-text">
+                    <h1>PauliBot</h1>
+                    <p>SPUS Virtual Assistant</p>
+                </div>
+            </div>
+            <div class="status-indicator">
+                <span class="dot"></span> Online
+            </div>
+        </header>
+
+        <!-- Chat Area -->
+        <main class="chat-window" id="chat-window">
+            <div class="message bot-message">
+                <div class="bubble">
+                    Hello! I am PauliBot. I can help you with admissions, locations, and staff information at Saint Paul University Surigao. How may I assist you today?
+                </div>
+            </div>
+        </main>
+
+        <!-- Input Area -->
+        <footer class="chat-input-area">
+            <form id="chat-form" onsubmit="sendMessage(event)">
+                {% csrf_token %}
+                <input type="text" id="user-input" placeholder="Type your question here..." autocomplete="off">
+                <button type="submit" id="send-btn">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+                    </svg>
+                </button>
+            </form>
+        </footer>
+    </div>
+
+    <script>
+        const chatWindow = document.getElementById('chat-window');
+        const userInput = document.getElementById('user-input');
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        function appendMessage(text, isUser) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = isUser ? 'message user-message' : 'message bot-message';
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            bubble.innerText = text;
+            
+            msgDiv.appendChild(bubble);
+            chatWindow.appendChild(msgDiv);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        function showTyping() {
+            const typingDiv = document.createElement('div');
+            typingDiv.id = 'typing-indicator';
+            typingDiv.className = 'message bot-message';
+            typingDiv.innerHTML = '<div class="bubble typing"><span></span><span></span><span></span></div>';
+            chatWindow.appendChild(typingDiv);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        function removeTyping() {
+            const typing = document.getElementById('typing-indicator');
+            if (typing) typing.remove();
+        }
+
+        async function sendMessage(e) {
+            e.preventDefault();
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            // Add user message
+            appendMessage(text, true);
+            userInput.value = '';
+
+            // Simulate network delay / typing
+            showTyping();
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({ message: text })
+                });
+                
+                const data = await response.json();
+                
+                // Wait a tiny bit for the animation to feel real
+                setTimeout(() => {
+                    removeTyping();
+                    if (data.response) {
+                        appendMessage(data.response, false);
+                    } else {
+                        appendMessage("Sorry, I encountered an error.", false);
+                    }
+                }, 600);
+            } catch (err) {
+                removeTyping();
+                appendMessage("Network error. Please try again.", false);
+            }
+        }
+    </script>
+</body>
+</html>
