@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PauliBot - Saint Paul University Surigao</title>
+    <!-- Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&family=Inter:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --spus-green: #0A4D2E;
+            --spus-gold: #D4AF37;
+            --text-dark: #333333;
+            --bg-light: #F8F9FA;
+            --white: #FFFFFF;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header / Navbar */
+        .navbar {
+            background-color: var(--spus-green);
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: var(--white);
+            text-decoration: none;
+        }
+
+        .brand-logo {
+            font-size: 2em;
+            /* Placeholder for logo */
+        }
+
+        .brand-text h1 {
+            font-family: 'Merriweather', serif;
+            font-size: 1.5em;
+            font-weight: 700;
+            color: var(--spus-gold);
+        }
+
+        .brand-text p {
+            font-size: 0.85em;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            opacity: 0.9;
+        }
+
+        /* Main Content */
+        .main-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            background: linear-gradient(135deg, rgba(10, 77, 46, 0.05) 0%, rgba(212, 175, 55, 0.1) 100%);
+        }
+
+        .card {
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            max-width: 900px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            overflow: hidden;
+        }
+
+        /* Left Side: Login */
+        .login-section {
+            padding: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .section-header {
+            margin-bottom: 30px;
+        }
+
+        .section-header h2 {
+            font-family: 'Merriweather', serif;
+            color: var(--spus-green);
+            font-size: 1.8em;
+            margin-bottom: 10px;
+        }
+
+        .section-header p {
+            color: #666;
+            font-size: 0.95em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .form-label {
+            position: absolute;
+            left: 15px;
+            top: 12px;
+            color: #999;
+            font-size: 0.9em;
+            transition: all 0.2s ease;
+            pointer-events: none;
+            background: var(--white);
+            padding: 0 5px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus {
+            border-color: var(--spus-green);
+        }
+
+        .form-input:focus+.form-label,
+        .form-input:not(:placeholder-shown)+.form-label {
+            top: -10px;
+            font-size: 0.8em;
+            color: var(--spus-green);
+            font-weight: 500;
+        }
+
+        .btn {
+            display: inline-block;
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background-color: var(--spus-green);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background-color: #083d25;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(10, 77, 46, 0.2);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 2px solid var(--spus-green);
+            color: var(--spus-green);
+            margin-top: 15px;
+        }
+
+        .btn-outline:hover {
+            background-color: rgba(10, 77, 46, 0.05);
+        }
+
+        .error-message {
+            background: #fff5f5;
+            color: #c53030;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+            border-left: 3px solid #c53030;
+        }
+
+        /* Right Side: Guest / Branding */
+        .guest-section {
+            background: linear-gradient(135deg, var(--spus-green) 0%, #0d5f39 100%);
+            color: var(--white);
+            padding: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .guest-section::before {
+            content: "";
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, var(--spus-gold) 0%, transparent 70%);
+            opacity: 0.1;
+            border-radius: 50%;
+        }
+
+        .guest-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .guest-content h3 {
+            font-family: 'Merriweather', serif;
+            font-size: 1.8em;
+            color: var(--spus-gold);
+            margin-bottom: 20px;
+        }
+
+        .feature-list {
+            list-style: none;
+            margin-bottom: 30px;
+        }
+
+        .feature-list li {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0.9;
+        }
+
+        .feature-list li svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--spus-gold);
+        }
+
+        .btn-guest {
+            background-color: var(--spus-gold);
+            color: #5c4a16;
+            font-weight: 700;
+        }
+
+        .btn-guest:hover {
+            background-color: #e5bd3c;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+        }
+
+        .guest-note {
+            margin-top: 20px;
+            font-size: 0.8em;
+            opacity: 0.7;
+            text-align: center;
+        }
+
+        /* Footer */
+        .footer {
+            background-color: var(--white);
+            padding: 20px;
+            text-align: center;
+            font-size: 0.9em;
+            color: #666;
+            border-top: 1px solid #eee;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .card {
+                grid-template-columns: 1fr;
+            }
+
+            .navbar {
+                padding: 15px 20px;
+            }
+
+            .guest-section {
+                padding: 40px;
+                order: -1;
+                /* Guest section on top for mobile/tablet */
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <a href="#" class="brand">
+            <span style="font-size: 2em; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">🏛️</span>
+            <div class="brand-text">
+                <h1>PauliBot</h1>
+                <p>Saint Paul University Surigao</p>
+            </div>
+        </a>
+    </nav>
+
+    <div class="main-container">
+        <div class="card">
+            <!-- Login Side -->
+            <div class="login-section">
+                <div class="section-header">
+                    <h2>Student Portal</h2>
+                    <p>Log in to access personalized assistance and chat history.</p>
+                </div>
+
+                {% if error %}
+                <div class="error-message">{{ error }}</div>
+                {% endif %}
+
+                <form method="POST" action="{% url 'login_page' %}">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <input type="text" id="username" name="username" class="form-input" placeholder=" " required>
+                        <label for="username" class="form-label">Username</label>
+                    </div>
+
+                    <div class="form-group">
+                        <input type="password" id="password" name="password" class="form-input" placeholder=" "
+                            required>
+                        <label for="password" class="form-label">Password</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </form>
+
+                <a href="{% url 'register_page' %}" class="btn btn-outline">
+                    Register New Account
+                </a>
+            </div>
+
+            <!-- Guest Side -->
+            <div class="guest-section">
+                <div class="guest-content">
+                    <h3>Visitor Access</h3>
+                    <p style="margin-bottom: 25px; opacity: 0.9;">
+                        Need quick answers? Interact with PauliBot instantly without logging in.
+                        Perfect for prospective students and visitors.
+                    </p>
+
+                    <ul class="feature-list">
+                        <li>
+                            <svg viewBox="0 0 24 24">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                            </svg>
+                            Instant Answers
+                        </li>
+                        <li>
+                            <svg viewBox="0 0 24 24">
+                                <path
+                                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-5H9V7h2v5z" />
+                            </svg>
+                            Admissions Info
+                        </li>
+                        <li>
+                            <svg viewBox="0 0 24 24">
+                                <path
+                                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 4c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm6 12H6v-1c0-2 4-3.1 6-3.1s6 1.1 6 3.1v1z" />
+                            </svg>
+                            No Registration
+                        </li>
+                    </ul>
+
+                    <a href="{% url 'chat_view' %}" class="btn btn-guest">
+                        Continue as Guest
+                    </a>
+
+                    <p class="guest-note">
+                        * Chat history is not saved in guest mode.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        &copy; 2026 Saint Paul University Surigao. All Rights Reserved.
+    </footer>
+</body>
+
+</html>

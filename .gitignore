@@ -1,0 +1,56 @@
+# ==============================================================================
+# Git Ignore Configuration
+# ==============================================================================
+# Prevents sensitive and generated files from being committed to version control
+# ==============================================================================
+
+# Environment variables and secrets
+.env
+.env.local
+.env.production
+*.env
+
+# Database files
+db.sqlite3
+db.sqlite3-journal
+*.db
+
+# Python compiled files
+*.pyc
+*.pyo
+__pycache__/
+*.so
+
+# Virtual environment
+venv/
+env/
+ENV/
+.venv/
+
+# Django static files
+staticfiles/
+/static/
+media/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Docker volumes
+postgres_data/
+
+# Logs
+*.log
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/

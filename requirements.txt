@@ -1,0 +1,24 @@
+# ==============================================================================
+# PauliBot Python Dependencies
+# ==============================================================================
+# Author: Senior Full-Stack Developer & DevOps Engineer
+# Purpose: Define all Python packages required for PauliBot
+# ==============================================================================
+
+# Core Django Framework
+Django==4.2.10
+
+# Django REST Framework for API endpoints
+djangorestframework==3.14.0
+
+# PostgreSQL Database Adapter
+psycopg2-binary==2.9.9
+
+# Production WSGI Server
+gunicorn==21.2.0
+
+# Environment Variable Management
+python-decouple==3.8
+
+# Django CORS Headers (if frontend is on different domain)
+django-cors-headers==4.3.1

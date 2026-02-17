@@ -1,0 +1,104 @@
+# ==============================================================================
+# PauliBot Docker Compose Configuration
+# ==============================================================================
+# Author: Senior Full-Stack Developer & DevOps Engineer
+# Purpose: Orchestrate PostgreSQL database and Django application containers
+#
+# Services:
+# 1. postgres - PostgreSQL 16 database with persistent storage
+# 2. web - Django application connected to PostgreSQL
+#
+# Usage:
+#   docker-compose up --build -d    # Build and start containers in background
+#   docker-compose ps               # Check container status
+#   docker-compose logs -f web      # View application logs
+#   docker-compose down             # Stop and remove containers
+# ==============================================================================
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database Service
+  postgres:
+    image: postgres:16-alpine
+    container_name: paulibot_postgres
+    restart: unless-stopped
+
+    environment:
+      # Database credentials from .env file
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+    volumes:
+      # Persistent data storage
+      - postgres_data:/var/lib/postgresql/data
+
+    ports:
+      # Expose PostgreSQL port (optional - for debugging)
+      - "5432:5432"
+
+    healthcheck:
+      # Verify database is ready before starting web service
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - paulibot_network
+
+  # Django Web Application Service
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: paulibot_web
+    restart: unless-stopped
+
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn paulibot.wsgi:application --bind 0.0.0.0:8000 --workers 3"
+
+    environment:
+      # Django settings
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DEBUG: ${DEBUG}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS}
+
+      # Database connection
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+
+    volumes:
+      # Mount application code (for development)
+      - .:/app
+      # Static files storage
+      - static_volume:/app/staticfiles
+
+    ports:
+      # Expose Django application port
+      - "8000:8000"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    networks:
+      - paulibot_network
+
+# Named volumes for data persistence
+volumes:
+  postgres_data:
+    driver: local
+  static_volume:
+    driver: local
+
+# Network for service communication
+networks:
+  paulibot_network:
+    driver: bridge
