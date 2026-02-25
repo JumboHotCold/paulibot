@@ -124,3 +124,76 @@ class ChatHistory(models.Model):
     
     def __str__(self):
         return f"{self.user.username} - {self.timestamp.strftime('%Y-%m-%d %H:%M')}"
+
+# ==============================================================================
+# KNOWLEDGE BASE MODELS (Phase 2 RAG)
+# ==============================================================================
+
+from pgvector.django import VectorField
+
+class Location(models.Model):
+    """
+    University locations for PauliBot to reference.
+    """
+    name = models.CharField(max_length=255, help_text="Name of the location (e.g., 'Registrar')")
+    description = models.TextField(help_text="Detailed description and where to find it")
+    map_available = models.BooleanField(default=False, help_text="Is there a map for this location?")
+    
+    # AI Search embedding
+    embedding = VectorField(dimensions=384, null=True, blank=True, help_text="Automatically generated vector embedding for semantic search")
+
+    def save(self, *args, **kwargs):
+        # Clear embedding if name or description changed
+        if self.pk:
+            old_obj = Location.objects.get(pk=self.pk)
+            if old_obj.name != self.name or old_obj.description != self.description:
+                self.embedding = None
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+class StaffMember(models.Model):
+    """
+    University staff directory.
+    """
+    name = models.CharField(max_length=255, help_text="Full Name with title (e.g., 'Sr. Marie Rosanne Mallillin, SPC')")
+    position = models.CharField(max_length=255, help_text="Official Job Title")
+    office = models.CharField(max_length=255, help_text="Where is their office located?")
+    
+    # AI Search embedding
+    embedding = VectorField(dimensions=384, null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        # Clear embedding if name, position or office changed
+        if self.pk:
+            old_obj = StaffMember.objects.get(pk=self.pk)
+            if old_obj.name != self.name or old_obj.position != self.position or old_obj.office != self.office:
+                self.embedding = None
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.name} - {self.position}"
+
+class FAQ(models.Model):
+    """
+    General university FAQs (Admissions, Academics, etc.).
+    """
+    category = models.CharField(max_length=100, help_text="Category (e.g., 'Admissions', 'Tuition')")
+    question = models.CharField(max_length=500, help_text="The question or topic")
+    answer = models.TextField(help_text="The official answer")
+    
+    # AI Search embedding
+    embedding = VectorField(dimensions=384, null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        # Clear embedding if category, question or answer changed
+        if self.pk:
+            old_obj = FAQ.objects.get(pk=self.pk)
+            if old_obj.category != self.category or old_obj.question != self.question or old_obj.answer != self.answer:
+                self.embedding = None
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.question
+

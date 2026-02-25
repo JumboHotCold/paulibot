@@ -18,9 +18,10 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database Service
+  # PostgreSQL Database Service (with pgvector for AI Embeddings)
   postgres:
-    image: postgres:16-alpine
+    # We use a specialized image that includes the pgvector extension pre-installed
+    image: ankane/pgvector:v0.5.1
     container_name: paulibot_postgres
     restart: unless-stopped
 

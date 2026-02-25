@@ -24,6 +24,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Load secret key from environment variable
 SECRET_KEY = config('DJANGO_SECRET_KEY', default='django-insecure-mock-key-for-paulibot-mvp')
 
+# Gemini API Key (Phase 1 AI Upgrade)
+GEMINI_API_KEY = config('GEMINI_API_KEY', default='')
+
 # Debug mode controlled by environment
 DEBUG = config('DEBUG', default=False, cast=bool)
 
@@ -35,6 +38,10 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(','
 # =============================================================================
 
 INSTALLED_APPS = [
+    # django-unfold must be before django.contrib.admin
+    'unfold',
+    'unfold.contrib.filters',
+    
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -49,6 +56,65 @@ INSTALLED_APPS = [
     # Local apps
     'chatbot',
 ]
+
+# =============================================================================
+# UNFOLD ADMIN THEME CONFIGURATION (SPUS Branding)
+# =============================================================================
+
+UNFOLD = {
+    "SITE_TITLE": "PauliBot Admin",
+    "SITE_HEADER": "PauliBot",
+    "SITE_SUBHEADER": "Saint Paul University Surigao",
+    "SITE_SYMBOL": "school",
+    "SHOW_HISTORY": True,
+    "SHOW_VIEW_ON_SITE": True,
+    "COLORS": {
+        "primary": {
+            "50": "#f0fdf4",
+            "100": "#dcfce7",
+            "200": "#bbf7d0",
+            "300": "#86efac",
+            "400": "#4ade80",
+            "500": "#0A4D2E",
+            "600": "#083d25",
+            "700": "#06301d",
+            "800": "#052416",
+            "900": "#041a10",
+            "950": "#020d08",
+        },
+    },
+    "SIDEBAR": {
+        "show_search": True,
+        "show_all_applications": True,
+        "navigation": [
+            {
+                "title": "Knowledge Base",
+                "icon": "library_books",
+                "items": [
+                    {"title": "Locations", "link": "/admin/chatbot/location/", "icon": "place"},
+                    {"title": "Staff Members", "link": "/admin/chatbot/staffmember/", "icon": "badge"},
+                    {"title": "FAQs", "link": "/admin/chatbot/faq/", "icon": "help"},
+                ],
+            },
+            {
+                "title": "Chat Management",
+                "icon": "chat",
+                "items": [
+                    {"title": "Chat Histories", "link": "/admin/chatbot/chathistory/", "icon": "history"},
+                    {"title": "Conversations", "link": "/admin/chatbot/conversation/", "icon": "forum"},
+                ],
+            },
+            {
+                "title": "Users & Auth",
+                "icon": "people",
+                "items": [
+                    {"title": "Users", "link": "/admin/chatbot/customuser/", "icon": "person"},
+                    {"title": "Groups", "link": "/admin/auth/group/", "icon": "group"},
+                ],
+            },
+        ],
+    },
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
