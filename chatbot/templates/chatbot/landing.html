@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+{% load static %}
 <html lang="en">
 
 <head>
@@ -411,7 +412,8 @@
 <body>
     <nav class="navbar">
         <a href="#" class="brand">
-            <span style="font-size: 2em; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">🏛️</span>
+            <img src="{% static 'chatbot/images/SPUS-Logo1.webp' %}" alt="SPUS Logo"
+                style="height: 50px; width: 50px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); object-fit: contain;">
             <div class="brand-text">
                 <h1>PauliBot</h1>
                 <p>Saint Paul University Surigao</p>
@@ -435,8 +437,9 @@
                 <form method="POST" action="{% url 'login_page' %}">
                     {% csrf_token %}
                     <div class="form-group">
-                        <input type="text" id="username" name="username" class="form-input" placeholder=" " required>
-                        <label for="username" class="form-label">Username</label>
+                        <input type="text" id="student_id" name="student_id" class="form-input" placeholder=" "
+                            required>
+                        <label for="student_id" class="form-label">Student ID</label>
                     </div>
 
                     <div class="form-group">
@@ -448,9 +451,6 @@
                     <button type="submit" class="btn btn-primary">Login</button>
                 </form>
 
-                <a href="{% url 'register_page' %}" class="btn btn-outline">
-                    Register New Account
-                </a>
             </div>
 
             <!-- Guest Side -->

@@ -1,0 +1,143 @@
+# PauliBot System Diagrams
+
+Based on GeeksforGeeks and Visual Paradigm UML standards, below are the Class Diagram / Entity Relationship Diagram and the Sequence Diagram of the PauliBot system.
+
+## 1. Class Diagram / Entity Relationship Diagram
+
+The Class Diagram illustrates the structure of the PauliBot system by showing its classes (models), attributes, methods, and relationships. It also serves as an Entity Relationship Diagram (ERD) showcasing database schema relationships.
+
+```mermaid
+classDiagram
+    %% Django Built-in Models
+    class AbstractUser {
+        +String username
+        +String password
+        +String email
+        +String first_name
+        +String last_name
+    }
+
+    class CustomUser {
+        +String student_id
+        +Meta meta
+        +__str__() String
+    }
+
+    class Conversation {
+        +Integer id
+        +Integer user_id
+        +String title
+        +DateTime created_at
+        +DateTime updated_at
+        +Boolean is_active
+        +Meta meta
+        +__str__() String
+    }
+
+    class ChatHistory {
+        +Integer id
+        +Integer user_id
+        +Integer conversation_id
+        +Text message
+        +Text response
+        +DateTime timestamp
+        +Meta meta
+        +__str__() String
+    }
+
+    class Location {
+        +Integer id
+        +String name
+        +Text description
+        +Boolean map_available
+        +VectorField embedding
+        +save()
+        +__str__() String
+    }
+
+    class StaffMember {
+        +Integer id
+        +String name
+        +String position
+        +String office
+        +VectorField embedding
+        +save()
+        +__str__() String
+    }
+
+    class FAQ {
+        +Integer id
+        +String category
+        +String question
+        +Text answer
+        +VectorField embedding
+        +save()
+        +__str__() String
+    }
+
+    %% Inheritance
+    AbstractUser <|-- CustomUser : extends
+
+    %% Relationships
+    CustomUser "1" -- "*" Conversation : owns (related_name='conversations')
+    CustomUser "1" -- "*" ChatHistory : sends (related_name='chat_history')
+    Conversation "1" -- "*" ChatHistory : contains (related_name='messages')
+```
+
+## 2. Sequence Diagram
+
+The Sequence Diagram documents the process flow of a user sending a message to PauliBot and receiving a generative AI response powered by Retrieval-Augmented Generation (RAG).
+
+```mermaid
+sequenceDiagram
+    actor User as Authenticated Student
+    participant Frontend as View (chat_api)
+    participant Logic as PauliBotLogic
+    participant RAG as RAGSearcher
+    participant DB as Vector Database
+    participant Gemini as Gemini API (LLM)
+    participant DjangoDB as PostgreSQL Database
+
+    User->>Frontend: Send Message (POST /api/chat/)
+    activate Frontend
+    
+    Frontend->>Logic: process_query(user_message)
+    activate Logic
+    
+    Logic->>Logic: _build_context(user_message)
+    activate Logic
+    
+    Logic->>RAG: search(query, limit=3)
+    activate RAG
+    
+    RAG->>DB: Query Similar Vector Embeddings
+    activate DB
+    DB-->>RAG: Return Top Contexts (Locations, Staff, FAQs)
+    deactivate DB
+    
+    RAG-->>Logic: Return Context Text
+    deactivate RAG
+    Logic-->>Logic: Format Context Prompt
+    deactivate Logic
+    
+    Logic->>Gemini: generate_content(prompt)
+    activate Gemini
+    Gemini-->>Logic: Return AI Response String
+    deactivate Gemini
+    
+    Logic-->>Frontend: Return AI Response
+    deactivate Logic
+    
+    Frontend->>DjangoDB: get_or_create Conversation
+    activate DjangoDB
+    DjangoDB-->>Frontend: Return Conversation Instance
+    deactivate DjangoDB
+    
+    Frontend->>DjangoDB: create ChatHistory(message, response)
+    activate DjangoDB
+    DjangoDB-->>Frontend: Save Confirmation
+    deactivate DjangoDB
+    
+    Frontend-->>User: Return JSON Response with AI Message
+    deactivate Frontend
+```

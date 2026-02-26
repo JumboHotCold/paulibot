@@ -14,12 +14,12 @@
 
 ```mermaid
 graph LR
-    subgraph Primary Users - LEFT
+    subgraph "Primary Users - LEFT"
         Student["🧑 Student / Authenticated"]
         Guest["🧑 Guest User"]
     end
 
-    subgraph PauliBot System Boundary - CENTER
+    subgraph "PauliBot System Boundary - CENTER"
         %% The 10 explicit Base & Included/Extended Use Cases %%
         UC1([1. Send Message])
         UC2([2. Send Message - Guest])
@@ -35,7 +35,7 @@ graph LR
         UC10([10. Auto-Generate Embeddings])
     end
 
-    subgraph Secondary Users - RIGHT
+    subgraph "Secondary Users - RIGHT"
         Admin["🧑 Admin / Staff"]
         Gemini["🤖 Gemini API"]
     end
@@ -284,7 +284,7 @@ flowchart TD
 ```mermaid
 flowchart TD
     A((Start)) --> B[Admin clicks 'Add New User' manually]
-    B --> C[Admin inputs username, ID, and raw password]
+    B --> C[Admin inputs Student ID, name, and raw password]
     C --> D[System intercepts save operation]
     D --> E[System hashes password using Django PBKDF2 algorithm]
     E --> F[System safely saves record to database]

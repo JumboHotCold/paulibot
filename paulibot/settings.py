@@ -65,7 +65,7 @@ UNFOLD = {
     "SITE_TITLE": "PauliBot Admin",
     "SITE_HEADER": "PauliBot",
     "SITE_SUBHEADER": "Saint Paul University Surigao",
-    "SITE_SYMBOL": "school",
+    "SITE_LOGO": "chatbot/images/SPUS-Logo1.webp",
     "SHOW_HISTORY": True,
     "SHOW_VIEW_ON_SITE": True,
     "COLORS": {
@@ -182,6 +182,12 @@ else:
 
 # Custom user model
 AUTH_USER_MODEL = 'chatbot.CustomUser'
+
+# Authentication backends
+AUTHENTICATION_BACKENDS = [
+    'chatbot.backends.StudentIDBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [

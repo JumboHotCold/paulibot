@@ -56,9 +56,9 @@ class UserLoginSerializer(serializers.Serializer):
     """
     Serializer for user login endpoint.
     
-    Validates username and password against database.
+    Validates student_id and password against database.
     """
-    username = serializers.CharField(required=True)
+    student_id = serializers.CharField(required=True)
     password = serializers.CharField(
         required=True,
         write_only=True,
@@ -71,18 +71,20 @@ class UserLoginSerializer(serializers.Serializer):
         
         This method checks the hashed password against the database.
         """
-        username = data.get('username')
+        student_id = data.get('student_id')
         password = data.get('password')
         
-        if username and password:
-            user = authenticate(username=username, password=password)
+        if student_id and password:
+            # We pass student_id as the 'username' parameter to authenticate()
+            # because our custom backend StudentIDBackend expects it there.
+            user = authenticate(username=student_id, password=password)
             if user is None:
-                raise serializers.ValidationError("Invalid username or password.")
+                raise serializers.ValidationError("Invalid Student ID or password.")
             if not user.is_active:
                 raise serializers.ValidationError("User account is disabled.")
             data['user'] = user
         else:
-            raise serializers.ValidationError("Must include 'username' and 'password'.")
+            raise serializers.ValidationError("Must include 'student_id' and 'password'.")
         
         return data
 

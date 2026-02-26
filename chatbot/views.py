@@ -69,16 +69,16 @@ def login_page(request):
     Handles login form submission from landing page.
     """
     if request.method == 'POST':
-        username = request.POST.get('username')
+        student_id = request.POST.get('student_id')
         password = request.POST.get('password')
         
-        user = authenticate(request, username=username, password=password)
+        user = authenticate(request, username=student_id, password=password)
         
         if user is not None:
             login(request, user)
             return redirect('chat_view')
         else:
-            return render(request, 'chatbot/landing.html', {'error': 'Invalid username or password'})
+            return render(request, 'chatbot/landing.html', {'error': 'Invalid Student ID or password'})
             
     return redirect('landing')
 
