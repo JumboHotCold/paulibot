@@ -1,0 +1,42 @@
+# PauliBot: System Design & Proposed System Documentation
+
+## D. System Design (Proposed System)
+
+### Overview of the Proposed System
+The **PauliBot** is an intelligent, AI-powered campus assistant designed specifically for St. Paul University Philippines (SPUP). Unlike traditional rule-based chatbots that rely on static keywords, PauliBot utilizes **Retrieval-Augmented Generation (RAG)** to provide dynamic, context-aware, and highly accurate responses. 
+
+The system serves as a 24/7 digital concierge, capable of answering complex inquiries about campus locations, staff directories, and university FAQs. By integrating the **Google Gemini API** with a dedicated local knowledge base, PauliBot ensures that students and guests receive information that is both linguistically natural and factually grounded in SPUP’s official data.
+
+---
+
+## F. Proposed System Description
+
+### System Architecture
+The PauliBot employs a modern, three-tier architecture designed for scalability, security, and high-performance AI inference.
+
+#### 1. Front-end (Presentation Layer)
+-   **Technology**: Django Templates, Vanilla CSS, and JavaScript.
+-   **Description**: A responsive web interface that provides a seamless chat experience. It handles user authentication (Student ID login), manages active conversation threads, and renders AI responses in real-time. The design prioritizes accessibility and ease of use for both desktop and mobile users.
+
+#### 2. Back-end (Logic Layer)
+-   **Technology**: Python / Django Framework.
+-   **Core Components**:
+    -   **PauliBot Logic Engine**: Orchestrates the communication between the user interface, the semantic searcher, and the Gemini API.
+    -   **RAG Searcher**: Utilizes the `SentenceTransformer` model (`all-MiniLM-L6-v2`) to convert user queries into mathematical vectors.
+    -   **Gemini API Integration**: Leverages Google’s Flash 2.5 model to synthesize the final response based on the retrieved campus context.
+
+#### 3. Database (Data Layer)
+-   **Technology**: PostgreSQL with **pgvector** extension.
+-   **Storage**: 
+    -   **Relational Data**: Stores user profiles, chat history, and administrative settings.
+    -   **Vector Data**: Stores high-dimensional embeddings for the Knowledge Base (FAQs, Locations, and Staff details), enabling "semantic" searches that understand meaning rather than just matching words.
+
+### How the New System Solves the Identified Problems
+
+| Identified Problem | PauliBot Solution |
+| :--- | :--- |
+| **Information Overload** | Students often struggle to find specific info in handbooks. PauliBot provides **instant, direct answers** to specific questions. |
+| **Staff Unavailability** | Inquiries after office hours or during busy periods go unanswered. PauliBot is **available 24/7**, relieving staff of repetitive queries. |
+| **Outdated/Inaccurate Data** | Static websites are hard to update. The **Admin Dashboard** allows staff to update the knowledge base instantly, which the AI immediately learns. |
+| **Keyword Limitations** | Traditional bots fail if the user doesn't use exact words. PauliBot's **Semantic Search** understands intent (e.g., "Where is the registrar?" vs. "registrar's office location"). |
+| **Misinformation (AI Hallucinations)** | General Lexical AI can make things up. PauliBot’s **RAG approach** forces the AI to answer *only* using verified SPUP data. |
