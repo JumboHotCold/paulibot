@@ -1,0 +1,93 @@
+# PauliBot System Analysis & Updated Sequence Diagram
+
+I have analyzed the current implementation of the PauliBot system, focusing on the **Student ID Login** and the **RAG-based Chat Flow**. Below is a summary of the architectural components and the updated sequence diagrams.
+
+## 🏗️ Architectural Overview
+- **Student ID Backend**: A custom Django authentication backend ([StudentIDBackend](file:///c:/Dex/CAPSTONE/paulibot/chatbot/backends.py#4-23)) allows students to log in using their `student_id` field instead of a standard username.
+- **PauliBot Logic Engine**: A high-level orchestrator ([PauliBotLogic](file:///c:/Dex/CAPSTONE/paulibot/chatbot/logic.py#5-60)) that manages the flow between user input, RAG search, and AI response generation.
+- **RAG Engine**: Uses `SentenceTransformer` and `pgvector` to perform semantic searches against the Knowledge Base (FAQ, Location, StaffMember).
+- **AI Synthesis**: Leverages the **Google Gemini Pro (Flash 2.5)** model to generate grounded responses based on retrieved context.
+
+## 📊 Sequence Diagrams
+
+### 1. Student ID Login
+This flow ensures that students can use university-provided credentials to access the chat history features.
+
+```mermaid
+sequenceDiagram
+    actor Student
+    participant Browser as "Frontend (Browser)"
+    participant Django as "Django (Views/Auth)"
+    participant Backend as "StudentIDBackend"
+    participant DB as "PostgreSQL (Users Table)"
+
+    Student->>Browser: Enters Student ID & Password
+    Browser->>Django: POST /login/ (student_id, password)
+    Django->>Backend: authenticate(username=student_id, password)
+    
+    Backend->>DB: Query User where student_id = username
+    DB-->>Backend: Return User Object
+    
+    Backend->>Backend: user.check_password(password)
+    
+    alt Correct Credentials
+        Backend-->>Django: Return Authenticated User
+        Django->>Django: login(request, user)
+        Django-->>Browser: Redirect to /chat/
+        Browser-->>Student: Display Chat Interface
+    else Invalid Credentials
+        Backend-->>Django: Return None
+        Django-->>Browser: Render login failure (error message)
+        Browser-->>Student: Display "Invalid Student ID or password"
+    end
+```
+
+### 2. RAG-Based Chat Flow (Updated)
+This is the core "intelligent" sequence where the system retrieves verified context to answer user questions.
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Browser as "Frontend (JavaScript)"
+    participant View as "Django (chat_api)"
+    participant Logic as "PauliBot Logic Engine"
+    participant RAG as "RAG Searcher (MiniLM)"
+    participant DB as "PostgreSQL + pgvector"
+    participant Gemini as "Google Gemini API (Flash 2.5)"
+
+    User->>Browser: Types message & clicks "Send"
+    Browser->>View: POST /api/chat/ (message, conversation_id)
+    
+    View->>Logic: process_query(user_message)
+    
+    Logic->>RAG: search(query, limit=3)
+    
+    Note over RAG, DB: Vector Search Process
+    RAG->>RAG: Generate query embedding (384-dim)
+    RAG->>DB: Execute L2Distance query (Locations/Staff/FAQ)
+    DB-->>RAG: Return top 3 most similar text chunks
+    
+    RAG-->>Logic: Return context string
+    
+    Note over Logic, Gemini: Prompt Construction
+    Logic->>Logic: Wrap Context + Question in System Prompt
+    
+    Logic->>Gemini: generate_content(prompt)
+    Gemini-->>Logic: Return finalized AI response text
+    
+    Logic-->>View: Return bot_response
+    
+    alt If Authenticated
+        View->>DB: Save ChatHistory & Update Conversation
+        DB-->>View: Success
+    end
+    
+    View-->>Browser: JSON ({response, saved, conversation_id})
+    Browser-->>User: Render AI message in Chat window
+```
+
+## ✅ Verification
+- Checked [chatbot/views.py](file:///c:/Dex/CAPSTONE/paulibot/chatbot/views.py) and [chatbot/backends.py](file:///c:/Dex/CAPSTONE/paulibot/chatbot/backends.py) to confirm login logic.
+- Analyzed [chatbot/rag.py](file:///c:/Dex/CAPSTONE/paulibot/chatbot/rag.py) to verify the vector search implementation (`pgvector` + `L2Distance`).
+- Reviewed [chatbot/logic.py](file:///c:/Dex/CAPSTONE/paulibot/chatbot/logic.py) to understand the prompt engineering and Gemini integration.
+- Confirmed that guest users follow a transient path (no data saving) while students benefit from persistent history.

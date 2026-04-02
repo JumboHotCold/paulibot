@@ -20,6 +20,7 @@ urlpatterns = [
     path('api/history', views.get_chat_history, name='history'), # Legacy support
     path('api/conversations', views.conversation_list, name='conversation_list'),
     path('api/conversations/<int:conversation_id>', views.conversation_detail, name='conversation_detail'),
+    path('api/feedback/<int:chat_id>', views.submit_feedback, name='submit_feedback'),
     
     # API Auth (Optional/Legacy support)
     path('api/register', views.register_user, name='api_register'),

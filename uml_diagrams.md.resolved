@@ -78,6 +78,14 @@ classDiagram
         +_generate_embedding(String text) List
     }
 
+    class LoginView {
+        +post(request) Response
+    }
+
+    class RegisterView {
+        +post(request) Response
+    }
+
     %% Relationships
     CustomUser "1" -- "*" Conversation : owns
     CustomUser "1" -- "*" ChatHistory : sends
@@ -88,6 +96,9 @@ classDiagram
     RAGSearcher ..> Location : searches
     RAGSearcher ..> StaffMember : searches
     RAGSearcher ..> FAQ : searches
+
+    LoginView ..> CustomUser : authenticates
+    RegisterView ..> CustomUser : creates
 ```
 
 ## 2. Entity Relationship Diagram (ERD)
@@ -108,6 +119,7 @@ erDiagram
     CUSTOMUSER {
         int id PK
         string student_id UK
+        string email
         string username
         string password
     }
@@ -153,7 +165,51 @@ erDiagram
     }
 ```
 
-## 3. Sequence Diagram
+## 3. Sequence Diagrams
+
+### 3.1 User Authentication Sequence
+
+The following diagram illustrates the login process for both Students (via Student ID) and Administrators (via Username).
+
+```mermaid
+sequenceDiagram
+    actor User as Student / Admin
+    participant View as views.login_page
+    participant Backend as StudentIDBackend
+    participant DB as PostgreSQL
+
+    User->>View: POST /login (ID/Username, Password)
+    activate View
+    
+    View->>Backend: authenticate(username, password)
+    activate Backend
+    
+    Backend->>DB: Query CustomUser (student_id=username)
+    activate DB
+    DB-->>Backend: User Record / None
+    deactivate DB
+    
+    alt User not found by student_id
+        Backend->>DB: Query User (username=username)
+        activate DB
+        DB-->>Backend: User Record / None
+        deactivate DB
+    end
+    
+    Backend->>Backend: check_password(password)
+    Backend-->>View: User Instance / None
+    deactivate Backend
+    
+    alt Auth Success
+        View->>View: login(request, user)
+        View-->>User: Redirect to /chat
+    else Auth Failure
+        View-->>User: Render Login with Error
+    end
+    deactivate View
+```
+
+### 3.2 Chat Process Sequence
 
 The Sequence Diagram documents the process flow of a user sending a message to PauliBot and receiving a generative AI response powered by Retrieval-Augmented Generation (RAG).
 

@@ -112,6 +112,13 @@ class ChatHistory(models.Model):
         db_index=True,
         help_text="When this chat exchange occurred"
     )
+    feedback = models.CharField(
+        max_length=10,
+        null=True,
+        blank=True,
+        choices=[('positive', 'Positive'), ('negative', 'Negative')],
+        help_text="Student feedback on this response (thumbs up/down)"
+    )
     
     class Meta:
         verbose_name = "Chat History"

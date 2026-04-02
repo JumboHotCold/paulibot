@@ -111,5 +111,5 @@ class ChatHistorySerializer(serializers.ModelSerializer):
     
     class Meta:
         model = ChatHistory
-        fields = ['id', 'username', 'student_id', 'conversation_id', 'message', 'response', 'timestamp']
+        fields = ['id', 'username', 'student_id', 'conversation_id', 'message', 'response', 'feedback', 'timestamp']
         read_only_fields = ['id', 'username', 'student_id', 'timestamp', 'conversation_id']

@@ -14,6 +14,41 @@ The system serves as a 24/7 digital concierge, capable of answering complex inqu
 ### System Architecture
 The PauliBot employs a modern, three-tier architecture designed for scalability, security, and high-performance AI inference.
 
+```mermaid
+graph TD
+    subgraph Users ["Users"]
+        Student_U["웃 Student"]
+        Guest_U["웃 Guest"]
+        Admin_U["웃 Admin"]
+    end
+
+    subgraph Client ["Presentation Layer (Front-end)"]
+        UI["🌐 Web Browser<br/>(HTML / CSS / JS)"]
+    end
+
+    subgraph Server ["Logic Layer (Back-end)"]
+        Django["🐍 Django Framework"]
+        Logic["🧠 PauliBot Logic Engine"]
+        RAG["🔍 RAG Searcher<br/>(SentenceTransformer)"]
+    end
+
+    subgraph AI ["External Services"]
+        Gemini["🤖 Google Gemini API<br/>(Flash 2.5 Model)"]
+    end
+
+    subgraph DB ["Data Layer (Database)"]
+        Postgres[("🐘 PostgreSQL + pgvector<br/>(Relational & Vector Data)")]
+    end
+
+    %% Flow of Data
+    Users ==> UI
+    UI <== HTTP ==> Django
+    Django <==> Logic
+    Logic <==> RAG
+    RAG <==> Postgres
+    Logic <== API Requests ==> Gemini
+```
+
 #### 1. Front-end (Presentation Layer)
 -   **Technology**: Django Templates, Vanilla CSS, and JavaScript.
 -   **Description**: A responsive web interface that provides a seamless chat experience. It handles user authentication (Student ID login), manages active conversation threads, and renders AI responses in real-time. The design prioritizes accessibility and ease of use for both desktop and mobile users.
@@ -40,3 +75,92 @@ The PauliBot employs a modern, three-tier architecture designed for scalability,
 | **Outdated/Inaccurate Data** | Static websites are hard to update. The **Admin Dashboard** allows staff to update the knowledge base instantly, which the AI immediately learns. |
 | **Keyword Limitations** | Traditional bots fail if the user doesn't use exact words. PauliBot's **Semantic Search** understands intent (e.g., "Where is the registrar?" vs. "registrar's office location"). |
 | **Misinformation (AI Hallucinations)** | General Lexical AI can make things up. PauliBot’s **RAG approach** forces the AI to answer *only* using verified SPUP data. |
+
+---
+
+## G. Data Flow Diagrams (DFD)
+
+### 1. Level 0 DFD (Context Diagram)
+The Context Diagram provides a high-level overview of the **PauliBot** system, identifying its boundaries and the external entities that interact with it.
+
+```mermaid
+graph LR
+    %% Entities
+    Student["🧑 Student"]
+    Guest["🧑 Guest User"]
+    Admin["🧑 Administrator"]
+    Gemini["🤖 Gemini API"]
+
+    %% System
+    System((0.0 PauliBot System))
+
+    %% Flows
+    Student -- "Queries / Auth Credentials" --> System
+    System -- "AI Responses / History" --> Student
+
+    Guest -- "Queries" --> System
+    System -- "AI Responses" --> Guest
+
+    Admin -- "Knowledge Base Updates / User Management" --> System
+    System -- "Admin Dashboard / Status" --> Admin
+
+    System -- "Enhanced Prompt (Context + Question)" --> Gemini
+    Gemini -- "Synthetic Response" --> System
+```
+
+### 2. Level 1 DFD (Process Decomposition)
+The Level 1 DFD provides a detailed decomposition of the PauliBot logic. It utilizes a **linear layout** for clarity and strictly follows the **Verb + Noun** naming convention. 
+
+```mermaid
+---
+config:
+  flowchart:
+    curve: linear
+  layout: elk
+---
+flowchart TD
+    %% Entities
+    Student["🧑 Student"]
+    Guest["🧑 Guest User"]
+    Admin["🧑 Administrator"]
+    Gemini["🤖 Gemini API"]
+
+    %% Data Stores
+    D1[("D1: User Records")]
+    D2[("D2: Chat Logs")]
+    D3[("D3: Knowledge Base")]
+
+    %% 1.0 Authentication Flow
+    Student -- "Auth Credentials" --> P1(("1.0\nAuthenticate\nUser"))
+    D1 -- "Verify Account" --> P1
+    P1 -- "Auth Status" --> Student
+    P1 -- "Authenticated Session" --> P2
+
+    %% 2.0 Chat Processing
+    Student -- "User Query" --> P2(("2.0\nProcess\nChat Query"))
+    Guest -- "Guest Query" --> P2
+
+    %% Sub-Process: RAG Search
+    P2 --> P3(("3.0\nSearch\nKnowledge"))
+    P3 -- "Semantic Lookup" --> D3
+    D3 -- "Context Chunks" --> P3
+    P3 -- "Text Context" --> P2
+
+    %% Sub-Process: AI Generation
+    P2 --> P4(("4.0\nSynthesize\nAI Response"))
+    P4 -- "Structured Prompt" --> Gemini
+    Gemini -- "AI String" --> P4
+    P4 -- "Response Content" --> P2
+
+    %% Sub-Process: History
+    P2 --> P5(("5.0\nManage\nChat History"))
+    P5 -- "Persist Message" --> D2
+    D2 -- "Retrieve History" --> P5
+    P5 -- "Past Conversations" --> Student
+
+    P2 -- "Final Response" --> Student & Guest
+
+    %% 6.0 Admin / Knowledge Management
+    Admin -- "Knowledge Content" --> P6(("6.0\nUpdate\nKnowledge Base"))
+    P6 -- "Store & Embed" --> D3
+```

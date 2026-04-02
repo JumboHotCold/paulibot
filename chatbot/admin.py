@@ -41,8 +41,8 @@ class ConversationAdmin(ModelAdmin):
 
 @admin.register(ChatHistory)
 class ChatHistoryAdmin(ModelAdmin):
-    list_display = ('user', 'conversation', 'timestamp')
-    list_filter = ('timestamp',)
+    list_display = ('user', 'conversation', 'feedback', 'timestamp')
+    list_filter = ('feedback', 'timestamp')
     search_fields = ('user__username', 'message')
     readonly_fields = ('timestamp',)
 

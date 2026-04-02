@@ -1,0 +1,52 @@
+# Proposed System Description & Requirements: PauliBot
+
+## F. Proposed System Description
+
+### 1. System Architecture
+The PauliBot employs a modern, three-tier architecture designed for scalability, security, and high-performance AI inference.
+
+#### Front-end (Presentation Layer)
+-   **Technology**: Django Templates, Vanilla CSS, and JavaScript.
+-   **Description**: A responsive web interface that providing a seamless chat experience. It handles user authentication (Student ID login), manages active conversation threads, and renders AI responses in real-time. The design prioritizes accessibility and ease of use for both desktop and mobile users.
+
+#### Back-end (Logic Layer)
+-   **Technology**: Python / Django Framework.
+-   **Core Components**:
+    -   **PauliBot Logic Engine**: Orchestrates communication between the UI, the semantic searcher, and the Gemini API.
+    -   **RAG Searcher**: Utilizes the `SentenceTransformer` model (`all-MiniLM-L6-v2`) to convert queries into vectors.
+    -   **Gemini API Integration**: Leverages Google’s Flash 2.5 model to synthesize responses based on retrieved context.
+
+#### Database (Data Layer)
+-   **Technology**: PostgreSQL with **pgvector** extension.
+-   **Storage**: 
+    -   **Relational Data**: Stores user profiles, chat history, and admin settings.
+    -   **Vector Data**: Stores high-dimensional embeddings for the Knowledge Base (FAQs, Locations, Staff details), enabling semantic search.
+
+### 2. How the New System Solves the Identified Problems
+
+| Identified Problem | PauliBot Solution |
+| :--- | :--- |
+| **Information Overload** | Provides instant, direct answers instead of requiring students to manually search through handbooks. |
+| **Staff Unavailability** | Available 24/7, ensuring inquiries are answered even outside office hours. |
+| **Outdated/Inaccurate Data** | Admin Dashboard allows for real-time updates to the Knowledge Base, making the AI immediately aware of changes. |
+| **Keyword Limitations** | Semantic search understands user intent and synonyms, rather than relying on exact word matches. |
+| **AI Hallucinations** | Uses Retrieval-Augmented Generation (RAG) to ground AI responses strictly in verified university data. |
+
+---
+
+## Requirements
+
+### 1. Functional Requirements (FR)
+-   **FR1: User Authentication**: The system shall allow students to log in using their Student ID and administrators using their username.
+-   **FR2: Intelligent Chatbot Interface**: The system shall provide a chat interface where users can ask questions in natural language.
+-   **FR3: Knowledge Retrieval (RAG)**: The system shall retrieve relevant information from the Knowledge Base based on semantic similarity to the user's query.
+-   **FR4: AI Response Generation**: The system shall generate natural-sounding responses using the Google Gemini API, grounded in retrieved context.
+-   **FR5: Administrative Dashboard**: The system shall provide a dashboard for administrators to manage Knowledge Base entries (FAQs, Staff, Locations).
+-   **FR6: Chat History Management**: The system shall store and display previous chat conversations for authenticated students.
+
+### 2. Non-Functional Requirements (NFR)
+-   **NFR1: Performance**: The system shall return a response to user queries within 3-5 seconds under normal network conditions.
+-   **NFR2: Accuracy**: The system shall prioritize factual accuracy by strictly utilizing the Knowledge Base context for its responses.
+-   **NFR3: Scalability**: The system shall support concurrent user sessions by utilizing a robust PostgreSQL backend.
+-   **NFR4: Security**: The system shall secure sensitive data, including password hashing and environment variable protection for API keys.
+-   **NFR5: Availability**: The system shall be accessible 24/7 via a web browser.

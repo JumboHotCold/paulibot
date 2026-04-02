@@ -627,6 +627,86 @@
             transition: all 0.2s ease;
         }
 
+        /* ========== FEEDBACK BUTTONS ========== */
+
+        .feedback-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .feedback-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 4px 12px;
+            cursor: pointer;
+            font-size: 0.85em;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s ease;
+            color: var(--text-light);
+        }
+
+        .feedback-btn:hover {
+            background-color: #F3F4F6;
+            transform: scale(1.05);
+        }
+
+        .feedback-btn.active-positive {
+            background-color: #DEF7EC;
+            border-color: #0A4D2E;
+            color: #0A4D2E;
+            pointer-events: none;
+        }
+
+        .feedback-btn.active-negative {
+            background-color: #FDE8E8;
+            border-color: #DC2626;
+            color: #DC2626;
+            pointer-events: none;
+        }
+
+        .feedback-btn.dimmed {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        /* ========== FOLLOW-UP SUGGESTION CHIPS ========== */
+
+        .follow-up-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .follow-up-chip {
+            background: var(--white);
+            border: 1px solid var(--spus-green);
+            border-radius: 20px;
+            padding: 6px 16px;
+            cursor: pointer;
+            font-size: 0.85em;
+            color: var(--spus-green);
+            transition: all 0.2s ease;
+            animation: bounceIn 0.4s ease-out both;
+        }
+
+        .follow-up-chip:nth-child(1) { animation-delay: 0.1s; }
+        .follow-up-chip:nth-child(2) { animation-delay: 0.2s; }
+        .follow-up-chip:nth-child(3) { animation-delay: 0.3s; }
+
+        .follow-up-chip:hover {
+            background-color: var(--spus-green);
+            color: var(--white);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(10, 77, 46, 0.2);
+        }
+
         /* ========== RESPONSIVE ========== */
 
         @media (max-width: 768px) {
@@ -646,6 +726,10 @@
 
             .chat-input {
                 padding: 12px 45px 12px 15px;
+            }
+
+            .follow-up-chips {
+                flex-direction: column;
             }
         }
     </style>
@@ -782,7 +866,21 @@
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
-        function appendMessage(text, sender, isUser) {
+        function parseSuggestions(text) {
+            // Parse [SUGGESTIONS: "Q1?" | "Q2?" | "Q3?"] from bot response
+            const match = text.match(/\[SUGGESTIONS:\s*(.+?)\]\s*$/);
+            if (!match) return { cleanText: text, suggestions: [] };
+
+            const cleanText = text.replace(/\[SUGGESTIONS:\s*.+?\]\s*$/, '').trim();
+            const suggestions = match[1]
+                .split('|')
+                .map(s => s.trim().replace(/^"|"$/g, '').trim())
+                .filter(s => s.length > 0);
+
+            return { cleanText, suggestions };
+        }
+
+        function appendMessage(text, sender, isUser, chatHistoryId = null, existingFeedback = null) {
             // Hide empty state if visible
             if (emptyState) emptyState.style.display = 'none';
 
@@ -793,19 +891,101 @@
             avatar.className = 'message-avatar';
             avatar.innerHTML = isUser ? '👤' : '🤖';
 
+            const contentWrapper = document.createElement('div');
+            contentWrapper.style.cssText = 'display:flex;flex-direction:column;max-width:100%;min-width:0;';
+
             const content = document.createElement('div');
             content.className = 'message-content';
 
             if (isUser) {
                 content.textContent = text;
             } else {
-                content.innerHTML = `<pre>${escapeHtml(text)}</pre>`;
+                // Parse suggestions from bot response
+                const { cleanText, suggestions } = parseSuggestions(text);
+                content.innerHTML = `<pre>${escapeHtml(cleanText)}</pre>`;
+
+                contentWrapper.appendChild(content);
+
+                // Feedback buttons (only for authenticated users with a saved chat entry)
+                if (chatHistoryId) {
+                    const feedbackDiv = document.createElement('div');
+                    feedbackDiv.className = 'feedback-actions';
+                    feedbackDiv.innerHTML = `
+                        <button class="feedback-btn ${existingFeedback === 'positive' ? 'active-positive' : ''} ${existingFeedback === 'negative' ? 'dimmed' : ''}" 
+                                onclick="submitFeedback(${chatHistoryId}, 'positive', this)" title="Helpful">
+                            👍 <span>Helpful</span>
+                        </button>
+                        <button class="feedback-btn ${existingFeedback === 'negative' ? 'active-negative' : ''} ${existingFeedback === 'positive' ? 'dimmed' : ''}" 
+                                onclick="submitFeedback(${chatHistoryId}, 'negative', this)" title="Not helpful">
+                            👎 <span>Not helpful</span>
+                        </button>
+                    `;
+                    contentWrapper.appendChild(feedbackDiv);
+                }
+
+                // Follow-up suggestion chips
+                if (suggestions.length > 0) {
+                    const chipsDiv = document.createElement('div');
+                    chipsDiv.className = 'follow-up-chips';
+                    suggestions.forEach(q => {
+                        const chip = document.createElement('button');
+                        chip.className = 'follow-up-chip';
+                        chip.textContent = q;
+                        chip.onclick = () => {
+                            // Remove all chip containers when one is clicked
+                            document.querySelectorAll('.follow-up-chips').forEach(c => c.remove());
+                            messageInput.value = q;
+                            sendMessage();
+                        };
+                        chipsDiv.appendChild(chip);
+                    });
+                    contentWrapper.appendChild(chipsDiv);
+                }
+
+                wrapper.appendChild(avatar);
+                wrapper.appendChild(contentWrapper);
+                messagesContainer.appendChild(wrapper);
+                scrollToBottom();
+                return;
             }
 
+            contentWrapper.appendChild(content);
             wrapper.appendChild(avatar);
-            wrapper.appendChild(content);
+            wrapper.appendChild(contentWrapper);
             messagesContainer.appendChild(wrapper);
             scrollToBottom();
+        }
+
+        async function submitFeedback(chatId, feedbackType, btnElement) {
+            try {
+                const resp = await fetch(`/api/feedback/${chatId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({ feedback: feedbackType })
+                });
+
+                if (resp.ok) {
+                    // Update button states
+                    const parent = btnElement.parentElement;
+                    const buttons = parent.querySelectorAll('.feedback-btn');
+                    buttons.forEach(btn => {
+                        btn.classList.remove('active-positive', 'active-negative', 'dimmed');
+                    });
+
+                    if (feedbackType === 'positive') {
+                        buttons[0].classList.add('active-positive');
+                        buttons[1].classList.add('dimmed');
+                    } else {
+                        buttons[1].classList.add('active-negative');
+                        buttons[0].classList.add('dimmed');
+                    }
+                }
+            } catch (err) {
+                console.error('Feedback error:', err);
+            }
         }
 
         function escapeHtml(text) {
@@ -869,7 +1049,7 @@
 
                 // Handle Response
                 if (data.response) {
-                    appendMessage(data.response, 'PauliBot', false);
+                    appendMessage(data.response, 'PauliBot', false, data.chat_history_id);
 
                     // Update current Conversation ID if newly created
                     if (data.conversation_id && data.conversation_id !== currentConversationId) {
@@ -952,14 +1132,8 @@
             if (messages.length > 0) {
                 emptyState.style.display = 'none';
                 messages.forEach(msg => {
-                    // Check if it's user or bot message based on data structure
-                    // The ChatHistory model saves:
-                    // 1. User Message (msg.message)
-                    // 2. Bot Response (msg.response)
-                    // So we append TWO bubbles per history item
-
                     appendMessage(msg.message, 'You', true);
-                    appendMessage(msg.response, 'PauliBot', false);
+                    appendMessage(msg.response, 'PauliBot', false, msg.id, msg.feedback);
                 });
             } else {
                 messagesContainer.innerHTML = '';

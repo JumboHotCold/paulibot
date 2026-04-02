@@ -237,7 +237,7 @@ def chat_api(request):
                 conversation.save()
 
             # Save Message
-            ChatHistory.objects.create(
+            chat_entry = ChatHistory.objects.create(
                 user=request.user,
                 conversation=conversation,
                 message=user_message,
@@ -251,20 +251,55 @@ def chat_api(request):
             user_type = request.user.username
             active_conversation_id = conversation.id
             conversation_title = conversation.title
+            chat_history_id = chat_entry.id
         else:
             # Guest: Do NOT Save
             saved = False
             user_type = 'guest'
             active_conversation_id = None
             conversation_title = None
+            chat_history_id = None
             
         return Response({
             'response': bot_response,
             'saved': saved,
             'user': user_type,
             'conversation_id': active_conversation_id,
-            'conversation_title': conversation_title
+            'conversation_title': conversation_title,
+            'chat_history_id': chat_history_id
         })
         
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+
+@api_view(['PATCH'])
+def submit_feedback(request, chat_id):
+    """
+    Submit feedback (thumbs up/down) for a specific chat response.
+    Works for both authenticated users (own messages) and allows guest feedback.
+    """
+    try:
+        chat_entry = ChatHistory.objects.get(id=chat_id)
+        
+        # Security: Only the owning user can give feedback on their messages
+        if request.user.is_authenticated and chat_entry.user != request.user:
+            return Response({'error': 'Unauthorized'}, status=403)
+        
+        feedback_value = request.data.get('feedback')
+        if feedback_value not in ('positive', 'negative', None):
+            return Response({'error': 'Invalid feedback value'}, status=400)
+        
+        chat_entry.feedback = feedback_value
+        chat_entry.save(update_fields=['feedback'])
+        
+        return Response({
+            'message': 'Feedback submitted',
+            'chat_id': chat_id,
+            'feedback': feedback_value
+        })
+        
+    except ChatHistory.DoesNotExist:
+        return Response({'error': 'Chat entry not found'}, status=404)
     except Exception as e:
         return Response({'error': str(e)}, status=500)
