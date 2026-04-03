@@ -54,3 +54,7 @@ postgres_data/
 dist/
 build/
 *.egg-info/
+
+# React Frontend (Vite)
+frontend/node_modules/
+frontend/dist/

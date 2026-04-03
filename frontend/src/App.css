@@ -1,0 +1,113 @@
+/* ============================================================================
+   PauliBot v2 — Custom Animations & Utilities
+   ============================================================================ */
+
+/* === Message Animations === */
+@keyframes messageSlideIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-message-in {
+  animation: messageSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* === Typing Indicator === */
+@keyframes typingBounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.3; }
+  40% { transform: scale(1); opacity: 1; }
+}
+.typing-dot {
+  animation: typingBounce 1.4s infinite ease-in-out both;
+}
+.typing-dot:nth-child(1) { animation-delay: -0.32s; }
+.typing-dot:nth-child(2) { animation-delay: -0.16s; }
+.typing-dot:nth-child(3) { animation-delay: 0s; }
+
+/* === Pulsing Online Dot === */
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 4px rgba(0, 102, 51, 0.5); }
+  50% { box-shadow: 0 0 12px rgba(0, 102, 51, 0.9), 0 0 24px rgba(0, 102, 51, 0.25); }
+}
+.pulse-dot {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+/* === Glassmorphism === */
+.glass-card {
+  background: rgba(26, 35, 50, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--color-glass-border);
+}
+
+/* === Map Placeholder Shimmer === */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.map-shimmer {
+  background: linear-gradient(90deg, rgba(197, 160, 89, 0.04) 25%, rgba(197, 160, 89, 0.1) 50%, rgba(197, 160, 89, 0.04) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+/* === Floating Animation === */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* === Quick Action Buttons === */
+.quick-action-btn {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.quick-action-btn:hover {
+  background: rgba(0, 102, 51, 0.15);
+  border-color: rgba(0, 102, 51, 0.5);
+  box-shadow: 0 0 20px rgba(0, 102, 51, 0.1);
+  transform: translateY(-1px);
+}
+
+/* === Gold Gradient Text === */
+.text-gradient-gold {
+  background: linear-gradient(135deg, #C5A059 0%, #DECA82 50%, #C5A059 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* === Login Page Background === */
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.login-bg {
+  background: linear-gradient(-45deg, #0A0F1A, #00220F, #0A0F1A, #1A2332);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+}
+
+/* === Card hover effect === */
+.entry-card {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.entry-card:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* === Fade-in utility === */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.animation-delay-100 { animation-delay: 0.1s; opacity: 0; }
+.animation-delay-200 { animation-delay: 0.2s; opacity: 0; }
+.animation-delay-300 { animation-delay: 0.3s; opacity: 0; }
+.animation-delay-400 { animation-delay: 0.4s; opacity: 0; }

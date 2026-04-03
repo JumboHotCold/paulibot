@@ -24,8 +24,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Load secret key from environment variable
 SECRET_KEY = config('DJANGO_SECRET_KEY', default='django-insecure-mock-key-for-paulibot-mvp')
 
-# Gemini API Key (Phase 1 AI Upgrade)
+# Gemini API Key (Phase 1 — kept for handbook ingestion scripts)
 GEMINI_API_KEY = config('GEMINI_API_KEY', default='')
+
+# Groq API Key (Phase 2 — Live Chat AI Engine)
+GROQ_API_KEY = config('GROQ_API_KEY', default='')
 
 # Debug mode controlled by environment
 DEBUG = config('DEBUG', default=False, cast=bool)
@@ -228,9 +231,19 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8000",
     "http://127.0.0.1:8000",
+    "http://localhost:5173",   # React dev server (Vite)
+    "http://127.0.0.1:5173",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+# CSRF trusted origins for React SPA
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
 
 # =============================================================================
 # INTERNATIONALIZATION
