@@ -15,7 +15,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from .logic import PauliBotLogic
-from .models import ChatHistory, CustomUser, Conversation
+from .models import ChatHistory, CustomUser, Conversation, StudentNeed, Announcement
 from .serializers import (
     UserRegistrationSerializer,
     UserLoginSerializer,
@@ -131,7 +131,12 @@ def login_user(request):
     if serializer.is_valid():
         user = serializer.validated_data['user']
         login(request, user)
-        return Response({'message': 'Login successful'}, status=status.HTTP_200_OK)
+        return Response({
+            'message': 'Login successful',
+            'name': user.first_name or user.username,
+            'is_superuser': user.is_superuser,
+            'student_id': user.student_id,
+        }, status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
@@ -212,7 +217,7 @@ def chat_api(request):
             return Response({'response': "Please type a message."}, status=400)
 
         # Process query with Logic Engine
-        bot_response = bot.process_query(user_message)
+        bot_response, sources = bot.process_query(user_message)
         
         # HYBRID ACCESS: SAVE Logic
         if request.user.is_authenticated:
@@ -262,6 +267,7 @@ def chat_api(request):
             
         return Response({
             'response': bot_response,
+            'sources': sources,
             'saved': saved,
             'user': user_type,
             'conversation_id': active_conversation_id,
@@ -303,3 +309,260 @@ def submit_feedback(request, chat_id):
         return Response({'error': 'Chat entry not found'}, status=404)
     except Exception as e:
         return Response({'error': str(e)}, status=500)
+
+
+# ==============================================================================
+# ADMIN DASHBOARD API ENDPOINTS
+# ==============================================================================
+
+from rest_framework.permissions import IsAdminUser
+from django.db.models import Count
+from django.db.models.functions import ExtractHour, ExtractWeekDay
+from django.core.paginator import Paginator
+import re
+
+
+@api_view(['GET'])
+def admin_campus_pulse(request):
+    """
+    Campus Pulse Heatmap Data.
+    Groups ChatHistory by day-of-week and hour-of-day, returns count per cell.
+    Only accessible to superusers.
+    """
+    if not request.user.is_superuser:
+        return Response({'error': 'Unauthorized'}, status=403)
+
+    data = (
+        ChatHistory.objects
+        .annotate(
+            day=ExtractWeekDay('timestamp'),
+            hour=ExtractHour('timestamp')
+        )
+        .values('day', 'hour')
+        .annotate(count=Count('id'))
+        .order_by('day', 'hour')
+    )
+    return Response(list(data))
+
+
+@api_view(['GET'])
+def admin_trending_confusion(request):
+    """
+    Trending Confusion Bar Chart Data.
+    Categorizes chat messages by keywords and returns top 10 by volume.
+    Only accessible to superusers.
+    """
+    if not request.user.is_superuser:
+        return Response({'error': 'Unauthorized'}, status=403)
+
+    # Define keyword-to-category mapping
+    categories = {
+        'Enrollment': ['enroll', 'registration', 'register', 'admission', 'admit'],
+        'Scholarship': ['scholarship', 'financial aid', 'grant', 'stipend'],
+        'Leave of Absence': ['leave', 'loa', 'absence', 'withdraw'],
+        'Grades': ['grade', 'gwa', 'transcript', 'mark', 'score', 'passing'],
+        'Requirements': ['requirement', 'document', 'submit', 'form', 'clearance'],
+        'Tuition': ['tuition', 'fee', 'payment', 'pay', 'balance', 'cashier'],
+        'Schedule': ['schedule', 'class', 'time', 'calendar', 'subject'],
+        'Staff': ['staff', 'faculty', 'professor', 'teacher', 'instructor', 'dean'],
+        'Location': ['location', 'where', 'office', 'building', 'room', 'campus'],
+        'General': [],  # fallback
+    }
+
+    messages = ChatHistory.objects.values_list('message', flat=True)
+    counts = {cat: 0 for cat in categories}
+
+    for msg in messages:
+        msg_lower = msg.lower()
+        matched = False
+        for cat, keywords in categories.items():
+            if cat == 'General':
+                continue
+            for kw in keywords:
+                if kw in msg_lower:
+                    counts[cat] += 1
+                    matched = True
+                    break
+        if not matched:
+            counts['General'] += 1
+
+    result = [
+        {'category': cat, 'count': cnt}
+        for cat, cnt in sorted(counts.items(), key=lambda x: x[1], reverse=True)
+        if cnt > 0
+    ][:10]
+
+    return Response(result)
+
+
+@api_view(['GET'])
+def admin_metrics(request):
+    """
+    Summary metrics for admin dashboard cards.
+    Derives counts from existing CustomUser, Conversation, and StudentNeed tables.
+    Only accessible to superusers.
+    """
+    if not request.user.is_superuser:
+        return Response({'error': 'Unauthorized'}, status=403)
+
+    total_enrolled = CustomUser.objects.filter(is_active=True, is_superuser=False).count()
+    # At-risk = students with high/critical urgency open needs
+    at_risk = StudentNeed.objects.filter(
+        urgency__in=['Critical', 'High'],
+        status__in=['Open', 'In Progress']
+    ).values('student').distinct().count()
+    unresolved_requests = StudentNeed.objects.exclude(status='Resolved').count()
+    pending_enrollments = StudentNeed.objects.filter(
+        need_type='Enrollment', status__in=['Open', 'In Progress']
+    ).count()
+
+    return Response({
+        'total_enrolled': total_enrolled,
+        'at_risk': at_risk,
+        'unresolved_requests': unresolved_requests,
+        'pending_enrollments': pending_enrollments,
+    })
+
+
+@api_view(['GET'])
+def admin_student_needs(request):
+    """
+    Paginated list of student needs with filters.
+    Query params: page, urgency, need_type, status, search
+    Only accessible to superusers.
+    """
+    if not request.user.is_superuser:
+        return Response({'error': 'Unauthorized'}, status=403)
+
+    qs = StudentNeed.objects.select_related('student').all()
+
+    # Apply filters
+    urgency = request.query_params.get('urgency')
+    need_type = request.query_params.get('need_type')
+    need_status = request.query_params.get('status')
+    search = request.query_params.get('search')
+
+    if urgency:
+        qs = qs.filter(urgency=urgency)
+    if need_type:
+        qs = qs.filter(need_type=need_type)
+    if need_status:
+        qs = qs.filter(status=need_status)
+    if search:
+        qs = qs.filter(
+            models.Q(student__student_id__icontains=search) |
+            models.Q(student__first_name__icontains=search) |
+            models.Q(student__last_name__icontains=search) |
+            models.Q(student__username__icontains=search)
+        )
+
+    paginator = Paginator(qs, 20)
+    page_num = request.query_params.get('page', 1)
+    try:
+        page = paginator.page(page_num)
+    except Exception:
+        page = paginator.page(1)
+
+    results = []
+    for need in page:
+        results.append({
+            'id': need.id,
+            'student_id': need.student.student_id,
+            'name': f"{need.student.first_name} {need.student.last_name}".strip() or need.student.username,
+            'need_type': need.need_type,
+            'urgency': need.urgency,
+            'status': need.status,
+            'assigned_advisor': need.assigned_advisor,
+            'date': need.created_at.strftime('%Y-%m-%d'),
+            'description': need.description,
+        })
+
+    return Response({
+        'results': results,
+        'count': paginator.count,
+        'num_pages': paginator.num_pages,
+        'current_page': page.number,
+    })
+
+
+@api_view(['PATCH'])
+def admin_student_need_detail(request, pk):
+    """
+    Update a student need record (status, assigned_advisor).
+    Only accessible to superusers.
+    """
+    if not request.user.is_superuser:
+        return Response({'error': 'Unauthorized'}, status=403)
+
+    try:
+        need = StudentNeed.objects.get(pk=pk)
+    except StudentNeed.DoesNotExist:
+        return Response({'error': 'Not found'}, status=404)
+
+    if 'status' in request.data:
+        need.status = request.data['status']
+    if 'assigned_advisor' in request.data:
+        need.assigned_advisor = request.data['assigned_advisor']
+    if 'urgency' in request.data:
+        need.urgency = request.data['urgency']
+
+    need.save()
+    return Response({
+        'message': 'Updated',
+        'id': need.id,
+        'status': need.status,
+        'assigned_advisor': need.assigned_advisor,
+    })
+
+
+# ==============================================================================
+# PUBLIC API
+# ==============================================================================
+
+@api_view(['GET'])
+def get_announcements(request):
+    """
+    Fetch the latest active announcement to display on the frontend.
+    Returns the single newest active announcement, or null if none exist.
+    """
+    latest_announcement = Announcement.objects.filter(is_active=True).order_by('-created_at').first()
+    if latest_announcement:
+        return Response({
+            'has_announcement': True,
+            'title': latest_announcement.title,
+            'content': latest_announcement.content,
+            'created_at': latest_announcement.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        })
+    else:
+        return Response({'has_announcement': False})
+
+
+@api_view(['PATCH'])
+def update_profile(request):
+    """
+    Updates the authenticated student's nickname and/or avatar.
+    Nickname is limited to 30 chars. Avatar is uploaded as multipart/form-data.
+    """
+    if not request.user.is_authenticated:
+        return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    user = request.user
+    nickname = request.data.get('nickname')
+    avatar = request.FILES.get('avatar')
+    
+    if nickname is not None: # Allow empty nickname if user wants to clear it?
+        nickname = nickname.strip()
+        if len(nickname) > 30:
+            return Response({'error': 'Nickname too long (max 30 chars)'}, status=status.HTTP_400_BAD_REQUEST)
+        user.nickname = nickname or None # Store as None if empty
+    
+    if avatar:
+        user.avatar = avatar
+    
+    user.save()
+    
+    return Response({
+        'message': 'Profile updated successfully',
+        'nickname': user.nickname or user.username,
+        'avatar_url': user.avatar.url if user.avatar else None
+    })

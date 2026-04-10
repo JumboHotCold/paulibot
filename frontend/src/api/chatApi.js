@@ -103,3 +103,87 @@ export async function createConversation() {
   if (!res.ok) throw new Error('Failed to create conversation');
   return res.json();
 }
+
+
+// =============================================================================
+// ADMIN DASHBOARD API
+// =============================================================================
+
+export async function fetchAdminMetrics() {
+  const res = await fetch('/api/admin/metrics/', { credentials: 'include' });
+  if (!res.ok) throw new Error('Failed to fetch admin metrics');
+  return res.json();
+}
+
+export async function fetchCampusPulse() {
+  const res = await fetch('/api/admin/campus-pulse/', { credentials: 'include' });
+  if (!res.ok) throw new Error('Failed to fetch campus pulse');
+  return res.json();
+}
+
+export async function fetchTrendingConfusion() {
+  const res = await fetch('/api/admin/trending-confusion/', { credentials: 'include' });
+  if (!res.ok) throw new Error('Failed to fetch trending confusion');
+  return res.json();
+}
+
+export async function fetchStudentNeeds(params = {}) {
+  const query = new URLSearchParams();
+  if (params.page) query.set('page', params.page);
+  if (params.urgency) query.set('urgency', params.urgency);
+  if (params.need_type) query.set('need_type', params.need_type);
+  if (params.status) query.set('status', params.status);
+  if (params.search) query.set('search', params.search);
+
+  const res = await fetch(`/api/admin/student-needs/?${query.toString()}`, {
+    credentials: 'include',
+  });
+  if (!res.ok) throw new Error('Failed to fetch student needs');
+  return res.json();
+}
+
+export async function patchStudentNeed(id, data) {
+  const csrfToken = getCookie('csrftoken');
+  const res = await fetch(`/api/admin/student-needs/${id}/`, {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(csrfToken && { 'X-CSRFToken': csrfToken }),
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Failed to update student need');
+  return res.json();
+}
+
+// =============================================================================
+// PUBLIC API
+// =============================================================================
+
+export async function fetchAnnouncements() {
+  const res = await fetch('/api/announcements');
+  if (!res.ok) throw new Error('Failed to fetch announcements');
+  return res.json();
+}
+
+/**
+ * Updates the student's profile (nickname and/or avatar).
+ */
+export async function patchProfile(formData) {
+  const csrfToken = getCookie('csrftoken');
+  const res = await fetch('/api/profile', {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: {
+      // NOTE: FormData header 'Content-Type' is set automatically with boundary by the browser
+      ...(csrfToken && { 'X-CSRFToken': csrfToken }),
+    },
+    body: formData,
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to update profile');
+  }
+  return res.json();
+}

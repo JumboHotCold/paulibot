@@ -64,33 +64,45 @@ class PauliBotLogic:
         self.rag = RAGSearcher()
 
     def _build_context(self, query):
-        """Perform semantic search to fetch relevant context chunks from pgvector."""
+        """Perform semantic search to fetch relevant context chunks and return context string + sources list."""
         results = self.rag.search(query, limit=5)
         if not results:
-            return "No relevant knowledge base entries found for this query."
+            return "No relevant knowledge base entries found for this query.", []
         
         context = "Here is the relevant verified knowledge base for Saint Paul University Surigao (SPUS):\n\n"
-        for i, text in enumerate(results):
-            context += f"- {text}\n"
-        return context
+        sources = []
+        for i, res in enumerate(results):
+            context += f"- {res['text']}\n"
+            sources.append({
+                "title": res['document_title'],
+                "page": None,
+                "url": res['source_url']
+            })
+            
+        return context, sources
 
     def process_query(self, user_message):
         """
         Takes the user message, retrieves RAG context, and generates a response via Groq.
+        Returns a tuple of (response_text, sources_list).
         """
         if not self.client:
             return (
                 "System Configuration Error: The AI brain is currently offline because "
                 "the `GROQ_API_KEY` is missing in the `.env` file. "
                 "Please configure it to enable intelligent responses."
-            )
+            ), []
             
         msg = user_message.strip()
         if not msg:
-            return "Please type a message."
+            return "Please type a message.", []
         
+        # Procedural check
+        procedural_keywords = ['enroll', 'enrollment', 'how do i', 'how to', 'steps to', 'process for', 'requirements for', 'apply', 'deadline', 'loa', 'leave of absence', 'scholarship', 'add/drop']
+        is_procedural = any(kw in msg.lower() for kw in procedural_keywords)
+
         # Step 1: Retrieve context from the knowledge base (RAG)
-        context = self._build_context(msg)
+        context, sources = self._build_context(msg)
         
         # Step 2: Build the user message with embedded context
         user_content = (
@@ -100,38 +112,41 @@ class PauliBotLogic:
             f"Student Question: {msg}\n"
             f"Helpful Answer:"
         )
+
+        system_prompt = PAULIBOT_SYSTEM_PROMPT
+        if is_procedural:
+            system_prompt += "\n\nPROCEDURAL OVERRIDE: The user is asking a procedural question. You are an academic advisor. Answer using ONLY the provided handbook excerpts/knowledge base. Format procedural answers strictly as a numbered Markdown list. Ensure it is easy to read."
         
         # Step 3: Call Groq API with structured system + user messages
         try:
             chat_completion = self.client.chat.completions.create(
                 model=self.model_name,
                 messages=[
-                    {"role": "system", "content": PAULIBOT_SYSTEM_PROMPT},
+                    {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_content},
                 ],
-                temperature=0.6,       # Balanced: accurate but not robotic
-                max_tokens=1024,        # Enough for detailed answers
+                temperature=0.6,
+                max_tokens=1024,
                 top_p=0.9,
                 stream=False,
             )
             
             response_text = chat_completion.choices[0].message.content.strip()
             logger.info(f"Groq response generated successfully for query: '{msg[:50]}...'")
-            return response_text
+            return response_text, sources
             
         except Exception as e:
             error_msg = str(e)
             logger.error(f"Groq API error: {error_msg}")
             
-            # User-friendly error messages
             if "rate_limit" in error_msg.lower() or "429" in error_msg:
                 return (
                     "I'm receiving a lot of questions right now! 😅 "
                     "Please wait a moment and try again. "
                     "Maraming nagtatanong ngayon, subukan ulit mamaya!"
-                )
+                ), []
             
             return (
                 "I apologize, but I am currently experiencing technical difficulties "
                 f"connecting to my intelligence network. ({error_msg})"
-            )
+            ), []

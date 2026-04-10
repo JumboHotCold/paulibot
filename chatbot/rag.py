@@ -78,6 +78,8 @@ class RAGSearcher:
         for loc in locations:
             all_results.append({
                 'text': f"Location: {loc.name}. {loc.description}",
+                'title': f"Location: {loc.name}",
+                'url': None,
                 'distance': loc.distance
             })
 
@@ -89,6 +91,8 @@ class RAGSearcher:
         for staff in staff_members:
             all_results.append({
                 'text': f"Staff: {staff.name}, {staff.position}. Office located at {staff.office}.",
+                'title': f"Staff Directory: {staff.position}",
+                'url': None,
                 'distance': staff.distance
             })
 
@@ -100,12 +104,19 @@ class RAGSearcher:
         for faq in faqs:
             all_results.append({
                 'text': f"FAQ about {faq.category}: {faq.question} - {faq.answer}",
+                'title': f"FAQ ({faq.category}): {faq.question}",
+                'url': None,
                 'distance': faq.distance
             })
 
         # Sort all results by distance and pick the top `limit`
         all_results.sort(key=lambda x: x['distance'])
         
-        final_results = [r['text'] for r in all_results[:limit]]
-        logger.info(f"Top RAG results for query '{query}': {final_results}")
+        final_results = [{
+            "text": r['text'],
+            "document_title": r['title'],
+            "source_url": r['url']
+        } for r in all_results[:limit]]
+        
+        logger.info(f"Top RAG results count for query '{query}': {len(final_results)}")
         return final_results

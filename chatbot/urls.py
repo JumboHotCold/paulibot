@@ -25,4 +25,15 @@ urlpatterns = [
     # API Auth (Optional/Legacy support)
     path('api/register', views.register_user, name='api_register'),
     path('api/login', views.login_user, name='api_login'),
+
+    # Admin Dashboard API
+    path('api/admin/campus-pulse/', views.admin_campus_pulse, name='admin_campus_pulse'),
+    path('api/admin/trending-confusion/', views.admin_trending_confusion, name='admin_trending_confusion'),
+    path('api/admin/metrics/', views.admin_metrics, name='admin_metrics'),
+    path('api/admin/student-needs/', views.admin_student_needs, name='admin_student_needs'),
+    path('api/admin/student-needs/<int:pk>/', views.admin_student_need_detail, name='admin_student_need_detail'),
+    
+    # Public API
+    path('api/announcements', views.get_announcements, name='get_announcements'),
+    path('api/profile', views.update_profile, name='api_profile'),
 ]

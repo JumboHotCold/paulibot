@@ -4,6 +4,7 @@ import './App.css';
 import AuthPage from './components/AuthPage';
 import RegisterPage from './components/RegisterPage';
 import Dashboard from './components/Dashboard';
+import AdminDashboard from './components/AdminDashboard';
 
 import { sendMessage, ensureCsrfToken, fetchConversations } from './api/chatApi';
 
@@ -55,7 +56,17 @@ export default function App() {
       setMessages([{ text: `Welcome back, ${userData.name}! 🎓 I'm PauliBot... How may I assist you today?`, isUser: false }]);
     }
     setConversationId(null);
-    setCurrentView('chat');
+    // If superuser, show admin dashboard first; otherwise, go to chat
+    if (userData.is_superuser) {
+      setCurrentView('admin');
+    } else {
+      setCurrentView('chat');
+    }
+  }, []);
+
+  const handleUpdateUser = useCallback((updatedUserData) => {
+    setUser(updatedUserData);
+    localStorage.setItem('paulibot_user', JSON.stringify(updatedUserData));
   }, []);
 
   const handleLogout = useCallback(() => {
@@ -91,7 +102,7 @@ export default function App() {
           setIsTyping(false);
           setMessages((prev) => [
             ...prev,
-            { text: data.response || 'Sorry, I encountered an error.', isUser: false },
+            { text: data.response || 'Sorry, I encountered an error.', sources: data.sources || [], isUser: false },
           ]);
         }, 600); // 600ms network delay simulation from your index.html logic
       } catch (err) {
@@ -114,6 +125,16 @@ export default function App() {
     return <AuthPage onLogin={handleLogin} onNavigateRegister={() => setCurrentView('register')} />;
   }
 
+  // Admin Dashboard (superusers only)
+  if (currentView === 'admin' && user?.is_superuser) {
+    return (
+      <AdminDashboard
+        user={user}
+        onBackToChat={() => setCurrentView('chat')}
+      />
+    );
+  }
+
   return (
     <Dashboard
       user={user}
@@ -124,6 +145,8 @@ export default function App() {
       onSend={handleSend}
       onNewChat={handleNewChat}
       conversations={conversations}
+      onNavigateAdmin={user?.is_superuser ? () => setCurrentView('admin') : null}
+      onUpdateUser={handleUpdateUser}
     />
   );
 }

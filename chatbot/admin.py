@@ -8,7 +8,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from unfold.admin import ModelAdmin
 
-from .models import CustomUser, Conversation, ChatHistory, Location, StaffMember, FAQ
+from .models import CustomUser, Conversation, ChatHistory, Location, StaffMember, FAQ, StudentNeed, Announcement
 
 
 # ==============================================================================
@@ -69,3 +69,22 @@ class FAQAdmin(ModelAdmin):
     list_display = ('category', 'question')
     list_filter = ('category',)
     search_fields = ('question', 'answer')
+
+
+# ==============================================================================
+# ADMIN DASHBOARD
+# ==============================================================================
+
+@admin.register(StudentNeed)
+class StudentNeedAdmin(ModelAdmin):
+    list_display = ('student', 'need_type', 'urgency', 'status', 'assigned_advisor', 'created_at')
+    list_filter = ('urgency', 'need_type', 'status')
+    search_fields = ('student__student_id', 'student__username', 'description')
+    list_editable = ('status', 'assigned_advisor')
+
+@admin.register(Announcement)
+class AnnouncementAdmin(ModelAdmin):
+    list_display = ('title', 'is_active', 'created_at')
+    list_filter = ('is_active', 'created_at')
+    search_fields = ('title', 'content')
+    list_editable = ('is_active',)

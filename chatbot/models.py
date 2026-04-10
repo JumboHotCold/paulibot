@@ -34,6 +34,18 @@ class CustomUser(AbstractUser):
         unique=True,
         help_text="Student ID number (e.g., 2024-00001)"
     )
+    nickname = models.CharField(
+        max_length=30, 
+        null=True, 
+        blank=True,
+        help_text="Custom display name (max 30 chars)"
+    )
+    avatar = models.ImageField(
+        upload_to='avatars/', 
+        null=True, 
+        blank=True,
+        help_text="User profile picture"
+    )
     
     class Meta:
         verbose_name = "User"
@@ -203,4 +215,72 @@ class FAQ(models.Model):
 
     def __str__(self):
         return self.question
+
+
+# ==============================================================================
+# ADMIN DASHBOARD MODELS
+# ==============================================================================
+
+class StudentNeed(models.Model):
+    """
+    Tracks flagged student cases for the institutional admin dashboard.
+    """
+    NEED_TYPE_CHOICES = [
+        ('Financial', 'Financial'),
+        ('Academic', 'Academic'),
+        ('Enrollment', 'Enrollment'),
+        ('Mental Health', 'Mental Health'),
+    ]
+    URGENCY_CHOICES = [
+        ('Critical', 'Critical'),
+        ('High', 'High'),
+        ('Medium', 'Medium'),
+        ('Low', 'Low'),
+    ]
+    STATUS_CHOICES = [
+        ('Open', 'Open'),
+        ('In Progress', 'In Progress'),
+        ('Resolved', 'Resolved'),
+    ]
+
+    student = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='student_needs',
+        help_text="The student this need case is about"
+    )
+    need_type = models.CharField(max_length=20, choices=NEED_TYPE_CHOICES)
+    urgency = models.CharField(max_length=10, choices=URGENCY_CHOICES, default='Medium')
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='Open')
+    assigned_advisor = models.CharField(max_length=100, default='Unassigned')
+    description = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Student Need"
+        verbose_name_plural = "Student Needs"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.student.student_id} — {self.need_type} ({self.urgency})"
+
+class Announcement(models.Model):
+    """
+    Campus-wide announcements created by admins and displayed to all users (Guests/Students).
+    """
+    title = models.CharField(max_length=200, help_text="Headline or Title of the announcement")
+    content = models.TextField(help_text="Detailed message of the announcement")
+    is_active = models.BooleanField(default=True, help_text="Toggle to show/hide this announcement")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Announcement"
+        verbose_name_plural = "Announcements"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        status = "Active" if self.is_active else "Inactive"
+        return f"[{status}] {self.title}"
 
