@@ -2,6 +2,8 @@ import { useRef, useEffect, useState } from 'react';
 import ThemeToggle from './ThemeToggle';
 import EditProfileModal from './EditProfileModal';
 import { fetchAnnouncements } from '../api/chatApi';
+import VirtualTour from './VirtualTour';
+import MapModule from './MapModule';
 
 // =============================================================================
 // SUB-COMPONENTS FOR Markdown & Sources
@@ -85,6 +87,19 @@ export default function Dashboard({ user, onLogout, onNavigateLogin, messages, i
   const bottomRef = useRef(null);
   const [announcement, setAnnouncement] = useState(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [activeModule, setActiveModule] = useState('chat'); // 'chat' | 'tour' | 'map'
+
+  useEffect(() => {
+    // Check if the latest message triggers an active module change
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage.action === 'show_map') {
+        setActiveModule('map');
+      } else if (lastMessage.action === 'load_tour') {
+        setActiveModule('tour');
+      }
+    }
+  }, [messages]);
 
   useEffect(() => {
     // Fetch active announcement on mount
@@ -172,8 +187,26 @@ export default function Dashboard({ user, onLogout, onNavigateLogin, messages, i
         </aside>
       )}
 
+      {/* Main Area: Split Screen logic */}
+      <div className={`flex-1 flex ${activeModule !== 'chat' ? 'flex-row' : 'flex-col'} overflow-hidden relative`}>
+        
+        {/* Module Area (Tour / Map) */}
+        {activeModule !== 'chat' && (
+          <div className="flex-[2] relative p-4 bg-gray-50 flex items-center justify-center border-r border-gray-200">
+             <button 
+                onClick={() => setActiveModule('chat')} 
+                className="absolute top-6 right-6 z-20 bg-white/90 backdrop-blur shadow-md border border-gray-200 rounded-full px-4 py-2 text-sm font-bold text-gray-700 hover:text-red-500 hover:bg-white transition-all flex items-center gap-2"
+             >
+               ✕ Close {activeModule === 'tour' ? 'Tour' : 'Map'}
+             </button>
+             
+             {activeModule === 'tour' && <VirtualTour className="w-full h-full shadow-2xl" />}
+             {activeModule === 'map' && <MapModule className="w-full h-full shadow-2xl" />}
+          </div>
+        )}
+
       {/* Main Chat - Exact replica of <main class="main-chat"> */}
-      <main className="main-chat">
+      <main className={`main-chat ${activeModule !== 'chat' ? 'flex-1 min-w-[350px] border-l shadow-2xl' : ''}`} style={{ flex: activeModule !== 'chat' ? 1 : undefined }}>
         
         <header className="chat-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
@@ -182,6 +215,14 @@ export default function Dashboard({ user, onLogout, onNavigateLogin, messages, i
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            {/* Smart Virtual Tour Button */}
+            <button
+              onClick={() => setActiveModule(prev => prev === 'tour' ? 'chat' : 'tour')}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-spus-gold/50 bg-spus-gold/10 text-spus-gold hover:bg-spus-gold/20 transition-colors text-sm font-semibold"
+            >
+              <span>🧭</span>
+              <span className="hidden sm:inline">Smart Virtual Tour</span>
+            </button>
             <ThemeToggle />
             {isGuest && (
               <button 
@@ -311,6 +352,7 @@ export default function Dashboard({ user, onLogout, onNavigateLogin, messages, i
           </form>
         </div>
       </main>
+      </div>
 
       {!isGuest && (
         <EditProfileModal 

@@ -4,14 +4,18 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "start": "vite",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@photo-sphere-viewer/core": "^5.14.1",
+    "@photo-sphere-viewer/markers-plugin": "^5.14.1",
     "lucide-react": "^1.7.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-photo-sphere-viewer": "^6.2.3",
     "react-router-dom": "^7.13.2",
     "recharts": "^3.8.1"
   },

@@ -91,15 +91,19 @@ class PauliBotLogic:
                 "System Configuration Error: The AI brain is currently offline because "
                 "the `GROQ_API_KEY` is missing in the `.env` file. "
                 "Please configure it to enable intelligent responses."
-            ), []
+            ), [], None
             
         msg = user_message.strip()
         if not msg:
-            return "Please type a message.", []
+            return "Please type a message.", [], None
         
         # Procedural check
         procedural_keywords = ['enroll', 'enrollment', 'how do i', 'how to', 'steps to', 'process for', 'requirements for', 'apply', 'deadline', 'loa', 'leave of absence', 'scholarship', 'add/drop']
         is_procedural = any(kw in msg.lower() for kw in procedural_keywords)
+
+        # Mapping Intention check
+        mapping_keywords = ['where is', 'where are', 'location of', 'find', 'map of', 'how to get to', 'directions to']
+        action = 'show_map' if any(kw in msg.lower() for kw in mapping_keywords) else None
 
         # Step 1: Retrieve context from the knowledge base (RAG)
         context, sources = self._build_context(msg)
@@ -133,7 +137,7 @@ class PauliBotLogic:
             
             response_text = chat_completion.choices[0].message.content.strip()
             logger.info(f"Groq response generated successfully for query: '{msg[:50]}...'")
-            return response_text, sources
+            return response_text, sources, action
             
         except Exception as e:
             error_msg = str(e)
@@ -144,9 +148,9 @@ class PauliBotLogic:
                     "I'm receiving a lot of questions right now! 😅 "
                     "Please wait a moment and try again. "
                     "Maraming nagtatanong ngayon, subukan ulit mamaya!"
-                ), []
+                ), [], None
             
             return (
                 "I apologize, but I am currently experiencing technical difficulties "
                 f"connecting to my intelligence network. ({error_msg})"
-            ), []
+            ), [], None

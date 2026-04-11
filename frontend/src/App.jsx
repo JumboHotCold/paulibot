@@ -102,7 +102,7 @@ export default function App() {
           setIsTyping(false);
           setMessages((prev) => [
             ...prev,
-            { text: data.response || 'Sorry, I encountered an error.', sources: data.sources || [], isUser: false },
+            { text: data.response || 'Sorry, I encountered an error.', sources: data.sources || [], action: data.action, isUser: false },
           ]);
         }, 600); // 600ms network delay simulation from your index.html logic
       } catch (err) {

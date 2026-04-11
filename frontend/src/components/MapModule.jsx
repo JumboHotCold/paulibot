@@ -1,60 +1,38 @@
+import React from 'react';
+
 /**
- * MapModule Component — Campus Map Placeholder
+ * MapModule Component — Campus 2D Interactive Map
  * ==============================================
- * Placeholder for future Leaflet.js interactive campus map.
- * Displays a premium "Coming Soon" card with SPUS gold accents.
+ * Displays the 2D representation of the campus map.
  */
-
-export default function MapModule() {
+export default function MapModule({ className = "" }) {
   return (
-    <div className="glass-card rounded-2xl p-6 flex flex-col items-center justify-center h-full min-h-[300px] relative overflow-hidden">
-      {/* Background shimmer */}
-      <div className="absolute inset-0 map-shimmer rounded-2xl" />
-
-      {/* Content */}
-      <div className="relative z-10 flex flex-col items-center text-center gap-4">
-        {/* Floating map icon */}
-        <div className="animate-float">
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-spus-green/15 to-spus-gold/10 border border-glass-border flex items-center justify-center">
-            <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-spus-gold">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-            </svg>
-          </div>
-        </div>
-
-        {/* Title */}
-        <div>
-          <h3 className="text-lg font-semibold text-gradient-gold mb-1" style={{ fontFamily: 'var(--font-family-heading)' }}>
-            Campus Map
-          </h3>
-          <p className="text-sm text-text-secondary font-light">Coming Soon</p>
-        </div>
-
-        {/* Description */}
-        <p className="text-xs text-text-muted max-w-[220px] leading-relaxed">
-          An interactive map of Saint Paul University Surigao with building locations,
-          offices, and navigation — powered by Leaflet.js.
-        </p>
-
-        {/* Status badge */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-spus-gold/20 bg-spus-gold/5">
-          <span className="w-1.5 h-1.5 rounded-full bg-spus-gold animate-pulse" />
-          <span className="text-[0.65rem] text-spus-gold-300 font-medium uppercase tracking-wider">
-            In Development
-          </span>
-        </div>
+    <div className={`glass-card rounded-2xl flex flex-col h-full min-h-[300px] relative overflow-hidden bg-white shadow-lg border border-gray-200 ${className}`}>
+      {/* Header */}
+      <div className="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur px-4 py-2 rounded-xl shadow border border-gray-200 flex flex-col pointer-events-none">
+        <span className="text-xs text-spus-green font-bold uppercase tracking-wider">Campus Nav</span>
+        <span className="text-sm font-semibold text-gray-800">Saint Paul University Surigao</span>
       </div>
 
-      {/* Decorative grid */}
-      <div
-        className="absolute inset-0 opacity-[0.03] pointer-events-none"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(197,160,89,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(197,160,89,0.5) 1px, transparent 1px)',
-          backgroundSize: '40px 40px',
-        }}
-      />
+      {/* Map Content */}
+      <div className="absolute inset-0 w-full h-full p-4 overflow-auto bg-gray-50 flex items-center justify-center">
+        {/* We use an img tag for the 2D map. In a more complex app, this could be a Leaflet map with markers. */}
+        <div className="relative max-w-full max-h-full">
+            <img 
+              src="/images/2D_Mapping/ST.PAUL MAP.png" 
+              alt="SPUS Campus Map" 
+              className="object-contain rounded-xl shadow-md border border-gray-200 h-auto w-auto max-h-[80vh] md:max-h-full mx-auto"
+            />
+            {/* Example Hotspot/Pin, placed arbitrarily as an example.
+                You can add absolute positioned markers if you want specific location highlights based on what was asked. */}
+            {/* 
+            <div className="absolute top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center animate-bounce">
+               <span className="text-3xl">📍</span>
+               <span className="bg-white px-2 py-1 text-xs font-bold rounded shadow">Location</span>
+            </div> 
+            */}
+        </div>
+      </div>
     </div>
   );
 }
