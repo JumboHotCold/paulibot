@@ -1152,3 +1152,396 @@ body {
     }
 }
 
+
+/* =========================================
+   RESPONSIVE: MOBILE-FIRST OVERRIDES
+   ========================================= */
+
+/* --- Sidebar Overlay Backdrop --- */
+.sidebar-overlay {
+    display: none;
+}
+
+/* --- Sidebar Close Button (mobile only) --- */
+.sidebar-close-btn {
+    display: none;
+}
+
+/* --- Hamburger Button (mobile only) --- */
+.hamburger-btn {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--text-dark);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+.hamburger-btn:hover {
+    background: rgba(0,0,0,0.05);
+}
+
+/* --- Main Area Wrapper (replaces flex logic from JSX) --- */
+.main-area-wrapper {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+}
+.main-area-wrapper.has-module {
+    flex-direction: row;
+}
+.main-area-wrapper.chat-only {
+    flex-direction: column;
+}
+
+/* --- Module Panel (Tour / Map) --- */
+.module-panel {
+    flex: 2;
+    position: relative;
+    padding: 16px;
+    background: #f9fafb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid var(--border-color);
+}
+
+.module-close-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 20;
+    background: rgba(255,255,255,0.9);
+    backdrop-filter: blur(4px);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border: 1px solid var(--border-color);
+    border-radius: 9999px;
+    padding: 8px 16px;
+    font-size: 0.85em;
+    font-weight: 700;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.module-close-btn:hover {
+    color: #ef4444;
+    background: white;
+}
+
+/* --- Chat with module sidebar (desktop) --- */
+.chat-with-module {
+    flex: 1;
+    min-width: 350px;
+    border-left: 1px solid var(--border-color);
+    box-shadow: -4px 0 16px rgba(0,0,0,0.05);
+}
+
+/* --- Tour Toggle Button --- */
+.tour-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 9999px;
+    border: 1px solid rgba(212, 175, 55, 0.5);
+    background: rgba(212, 175, 55, 0.1);
+    color: var(--spus-gold);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.85em;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.tour-toggle-btn:hover {
+    background: rgba(212, 175, 55, 0.2);
+}
+.tour-btn-label {
+    display: inline;
+}
+
+/* --- Empty Chat State --- */
+.empty-chat-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    width: 100%;
+    height: 100%;
+    margin-top: -40px;
+}
+.empty-chat-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+    letter-spacing: -0.02em;
+    text-align: center;
+    font-family: var(--font-family-heading, 'Merriweather', serif);
+    color: var(--spus-green);
+}
+.empty-chat-subtitle {
+    font-size: 0.95rem;
+    margin-bottom: 16px;
+    font-weight: 500;
+    text-align: center;
+    color: var(--text-light);
+}
+.guest-warning-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #b45309;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    background-color: #fffbeb;
+    padding: 8px 16px;
+    border-radius: 9999px;
+    border: 1px solid #fde68a;
+}
+
+
+/* =========================================
+   MOBILE BREAKPOINT: <= 768px
+   ========================================= */
+@media (max-width: 768px) {
+
+    /* --- Sidebar as Overlay Drawer --- */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 280px;
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 1000;
+        box-shadow: none;
+    }
+    .sidebar.sidebar-open {
+        transform: translateX(0);
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Overlay backdrop */
+    .sidebar-overlay {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: 999;
+        animation: fadeIn 0.2s ease-out;
+    }
+
+    /* Close button inside sidebar */
+    .sidebar-close-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 32px;
+        height: 32px;
+        background: rgba(0,0,0,0.06);
+        border: none;
+        border-radius: 50%;
+        font-size: 14px;
+        cursor: pointer;
+        color: var(--text-light);
+        z-index: 10;
+        transition: all 0.2s;
+    }
+    .sidebar-close-btn:hover {
+        background: rgba(0,0,0,0.1);
+        color: var(--text-dark);
+    }
+
+    /* Hamburger menu visible */
+    .hamburger-btn {
+        display: flex;
+    }
+
+    /* --- Module Panel: Stack vertically --- */
+    .main-area-wrapper.has-module {
+        flex-direction: column;
+    }
+    .module-panel {
+        flex: none;
+        height: 50vh;
+        min-height: 280px;
+        max-height: 55vh;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        padding: 8px;
+    }
+    .module-close-btn {
+        top: 12px;
+        right: 12px;
+        padding: 6px 12px;
+        font-size: 0.8em;
+    }
+
+    /* Chat shrinks to fill remaining space */
+    .chat-with-module {
+        min-width: unset;
+        border-left: none;
+        box-shadow: none;
+        flex: 1;
+    }
+
+    /* --- Chat Header --- */
+    .chat-header {
+        padding: 10px 14px;
+    }
+    .chat-title {
+        font-size: 0.95em;
+    }
+
+    /* --- Tour Button: Icon only on small screens --- */
+    .tour-btn-label {
+        display: none;
+    }
+    .tour-toggle-btn {
+        padding: 6px 10px;
+    }
+
+    /* --- Messages --- */
+    .messages-container {
+        padding: 16px 12px;
+        gap: 16px;
+    }
+    .message-wrapper {
+        gap: 8px;
+    }
+    .message-avatar {
+        width: 28px;
+        height: 28px;
+        font-size: 0.9em;
+    }
+    .message-content {
+        padding: 10px 14px;
+        font-size: 0.9em;
+    }
+
+    /* --- Input Area --- */
+    .input-area {
+        padding: 12px 12px;
+    }
+    .chat-input {
+        padding: 12px 44px 12px 14px;
+        font-size: 0.95em;
+        border-radius: 10px;
+    }
+    .send-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+    }
+
+    /* --- Empty State --- */
+    .empty-chat-state {
+        margin-top: -20px;
+        padding: 16px 12px;
+    }
+    .empty-chat-title {
+        font-size: 1.8rem;
+    }
+    .empty-chat-subtitle {
+        font-size: 0.85rem;
+    }
+    .guest-warning-badge {
+        font-size: 0.75rem;
+        padding: 6px 12px;
+    }
+
+    /* --- Landing / Auth Page --- */
+    .landing-card {
+        grid-template-columns: 1fr;
+    }
+    .navbar {
+        padding: 12px 16px;
+    }
+    .brand-text h1 {
+        font-size: 1.15em;
+    }
+    .brand-text p {
+        font-size: 0.7em;
+    }
+    .main-container {
+        padding: 16px;
+    }
+    .login-section {
+        padding: 30px 24px;
+    }
+    .guest-section {
+        padding: 30px 24px;
+        order: -1;
+    }
+    .section-header h2 {
+        font-size: 1.4em;
+    }
+    .guest-content h3 {
+        font-size: 1.4em;
+    }
+
+    /* --- Announcement Banner --- */
+    .announcement-banner {
+        padding: 10px 14px !important;
+        font-size: 0.85em;
+    }
+
+    /* --- Follow-up Chips --- */
+    .follow-up-chip {
+        padding: 5px 12px;
+        font-size: 0.8em;
+    }
+}
+
+
+/* =========================================
+   EXTRA SMALL SCREENS: <= 400px
+   ========================================= */
+@media (max-width: 400px) {
+    .sidebar {
+        width: 100%;
+    }
+    .module-panel {
+        height: 45vh;
+        min-height: 240px;
+    }
+    .chat-header {
+        padding: 8px 10px;
+    }
+    .messages-container {
+        padding: 12px 8px;
+        gap: 12px;
+    }
+    .message-content {
+        padding: 8px 10px;
+        font-size: 0.85em;
+    }
+    .input-area {
+        padding: 10px 8px;
+    }
+    .empty-chat-title {
+        font-size: 1.5rem;
+    }
+    .login-section {
+        padding: 24px 16px;
+    }
+    .guest-section {
+        padding: 24px 16px;
+    }
+    .section-header h2 {
+        font-size: 1.2em;
+    }
+}
+
+

@@ -6,6 +6,18 @@ import React from 'react';
  * Displays the 2D representation of the campus map.
  */
 export default function MapModule({ className = "" }) {
+
+  const handleImageClickCoordLogger = (e) => {
+    const rect = e.target.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const xPercent = ((x / rect.width) * 100).toFixed(2);
+    const yPercent = ((y / rect.height) * 100).toFixed(2);
+    
+    console.log(`Map Coordinate -> top: '${yPercent}%', left: '${xPercent}%'`);
+    alert(`Map Coordinates logged:\nTop: ${yPercent}%\nLeft: ${xPercent}%\n\nYou can use these to place absolute pins on the 2D Map!`);
+  };
+
   return (
     <div className={`glass-card rounded-2xl flex flex-col h-full min-h-[300px] relative overflow-hidden bg-white shadow-lg border border-gray-200 ${className}`}>
       {/* Header */}
@@ -21,7 +33,8 @@ export default function MapModule({ className = "" }) {
             <img 
               src="/images/2D_Mapping/ST.PAUL MAP.png" 
               alt="SPUS Campus Map" 
-              className="object-contain rounded-xl shadow-md border border-gray-200 h-auto w-auto max-h-[80vh] md:max-h-full mx-auto"
+              className="object-contain rounded-xl shadow-md border border-gray-200 h-auto w-auto max-h-[80vh] md:max-h-full mx-auto cursor-crosshair"
+              onClick={handleImageClickCoordLogger}
             />
             {/* Example Hotspot/Pin, placed arbitrarily as an example.
                 You can add absolute positioned markers if you want specific location highlights based on what was asked. */}

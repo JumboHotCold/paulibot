@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getCookie, ensureCsrfToken } from '../api/chatApi';
 
 export default function AuthPage({ onLogin, onNavigateRegister }) {
   const [studentId, setStudentId] = useState('');
@@ -14,10 +15,15 @@ export default function AuthPage({ onLogin, onNavigateRegister }) {
     setError('');
 
     try {
+      await ensureCsrfToken();
+      const csrfToken = getCookie('csrftoken');
       const res = await fetch('/api/login', {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(csrfToken && { 'X-CSRFToken': csrfToken }),
+        },
         body: JSON.stringify({ student_id: studentId, password }),
       });
       const data = await res.json();
@@ -93,10 +99,6 @@ export default function AuthPage({ onLogin, onNavigateRegister }) {
 
               <button type="submit" disabled={isLoading} className="btn btn-primary">
                 {isLoading ? 'Loading...' : 'Login'}
-              </button>
-
-              <button type="button" onClick={onNavigateRegister} className="btn btn-outline" style={{ marginTop: '15px' }}>
-                Create Account
               </button>
             </form>
           </div>

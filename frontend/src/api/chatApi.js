@@ -8,7 +8,7 @@
 /**
  * Extract a cookie value by name from document.cookie.
  */
-function getCookie(name) {
+export function getCookie(name) {
   const cookies = document.cookie.split(';');
   for (let cookie of cookies) {
     cookie = cookie.trim();
@@ -85,6 +85,22 @@ export async function fetchConversationDetails(id) {
     credentials: 'include',
   });
   if (!res.ok) throw new Error('Failed to fetch conversation details');
+  return res.json();
+}
+
+/**
+ * Delete a specific conversation.
+ */
+export async function deleteConversation(id) {
+  const csrfToken = getCookie('csrftoken');
+  const res = await fetch(`/api/conversations/${id}`, {
+    method: 'DELETE',
+    credentials: 'include',
+    headers: {
+      ...(csrfToken && { 'X-CSRFToken': csrfToken }),
+    },
+  });
+  if (!res.ok) throw new Error('Failed to delete conversation');
   return res.json();
 }
 

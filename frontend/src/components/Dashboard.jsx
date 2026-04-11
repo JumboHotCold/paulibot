@@ -4,6 +4,7 @@ import EditProfileModal from './EditProfileModal';
 import { fetchAnnouncements } from '../api/chatApi';
 import VirtualTour from './VirtualTour';
 import MapModule from './MapModule';
+import PromptGrid from './PromptGrid';
 
 // =============================================================================
 // SUB-COMPONENTS FOR Markdown & Sources
@@ -83,11 +84,12 @@ function parseMessage(rawText) {
   return { text: cleanText, suggestions };
 }
 
-export default function Dashboard({ user, onLogout, onNavigateLogin, messages, isTyping, onSend, onNewChat, conversations = [], onNavigateAdmin, onUpdateUser }) {
+export default function Dashboard({ user, onLogout, onNavigateLogin, messages, isTyping, onSend, onNewChat, conversations = [], onNavigateAdmin, onUpdateUser, onDeleteChat, onLoadChat }) {
   const bottomRef = useRef(null);
   const [announcement, setAnnouncement] = useState(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [activeModule, setActiveModule] = useState('chat'); // 'chat' | 'tour' | 'map'
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     // Check if the latest message triggers an active module change
@@ -120,6 +122,13 @@ export default function Dashboard({ user, onLogout, onNavigateLogin, messages, i
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
+  // Close sidebar when switching to a module on mobile
+  useEffect(() => {
+    if (activeModule !== 'chat') {
+      setIsSidebarOpen(false);
+    }
+  }, [activeModule]);
+
   const isGuest = user.type === 'GUEST';
   const isChatEmpty = messages.length === 0;
   
@@ -138,11 +147,28 @@ export default function Dashboard({ user, onLogout, onNavigateLogin, messages, i
   return (
     <div className="chat-layout">
       
+      {/* Mobile Sidebar Overlay */}
+      {!isGuest && isSidebarOpen && (
+        <div 
+          className="sidebar-overlay"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar - Exact replica of chat.html <aside class="sidebar"> */}
       {!isGuest && (
-        <aside className="sidebar">
+        <aside className={`sidebar ${isSidebarOpen ? 'sidebar-open' : ''}`}>
+          {/* Mobile close button */}
+          <button 
+            className="sidebar-close-btn"
+            onClick={() => setIsSidebarOpen(false)}
+            aria-label="Close sidebar"
+          >
+            ✕
+          </button>
+
           <div className="sidebar-header">
-            <button className="new-chat-btn" onClick={onNewChat}>
+            <button className="new-chat-btn" onClick={() => { onNewChat(); setIsSidebarOpen(false); }}>
               <span>+</span> New Chat
             </button>
           </div>
@@ -154,9 +180,18 @@ export default function Dashboard({ user, onLogout, onNavigateLogin, messages, i
               </div>
             ) : (
               conversations.map(conv => (
-                <button key={conv.id} className="conversation-item">
-                  {conv.title || "New Chat"}
-                </button>
+                <div key={conv.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button className="conversation-item" onClick={() => { onLoadChat && onLoadChat(conv.id); setIsSidebarOpen(false); }} style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'left' }}>
+                    {conv.title || "New Chat"}
+                  </button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); onDeleteChat && onDeleteChat(conv.id); }}
+                    style={{ background: 'none', border: 'none', color: '#dc3545', cursor: 'pointer', padding: '5px' }}
+                    title="Delete Chat"
+                  >
+                    🗑️
+                  </button>
+                </div>
               ))
             )}
           </div>
@@ -188,14 +223,14 @@ export default function Dashboard({ user, onLogout, onNavigateLogin, messages, i
       )}
 
       {/* Main Area: Split Screen logic */}
-      <div className={`flex-1 flex ${activeModule !== 'chat' ? 'flex-row' : 'flex-col'} overflow-hidden relative`}>
+      <div className={`main-area-wrapper ${activeModule !== 'chat' ? 'has-module' : 'chat-only'}`}>
         
-        {/* Module Area (Tour / Map) */}
+        {/* Module Area (Tour / Map) — stacks on top for mobile, side for desktop */}
         {activeModule !== 'chat' && (
-          <div className="flex-[2] relative p-4 bg-gray-50 flex items-center justify-center border-r border-gray-200">
+          <div className="module-panel">
              <button 
                 onClick={() => setActiveModule('chat')} 
-                className="absolute top-6 right-6 z-20 bg-white/90 backdrop-blur shadow-md border border-gray-200 rounded-full px-4 py-2 text-sm font-bold text-gray-700 hover:text-red-500 hover:bg-white transition-all flex items-center gap-2"
+                className="module-close-btn"
              >
                ✕ Close {activeModule === 'tour' ? 'Tour' : 'Map'}
              </button>
@@ -206,28 +241,42 @@ export default function Dashboard({ user, onLogout, onNavigateLogin, messages, i
         )}
 
       {/* Main Chat - Exact replica of <main class="main-chat"> */}
-      <main className={`main-chat ${activeModule !== 'chat' ? 'flex-1 min-w-[350px] border-l shadow-2xl' : ''}`} style={{ flex: activeModule !== 'chat' ? 1 : undefined }}>
+      <main className={`main-chat ${activeModule !== 'chat' ? 'chat-with-module' : ''}`}>
         
         <header className="chat-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {/* Hamburger menu for mobile */}
+            {!isGuest && (
+              <button 
+                className="hamburger-btn"
+                onClick={() => setIsSidebarOpen(true)}
+                aria-label="Open sidebar"
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <line x1="3" y1="12" x2="21" y2="12" />
+                  <line x1="3" y1="18" x2="21" y2="18" />
+                </svg>
+              </button>
+            )}
             <div className="chat-title">
               {!isGuest ? 'New Chat' : 'Welcome Guest'}
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             {/* Smart Virtual Tour Button */}
             <button
               onClick={() => setActiveModule(prev => prev === 'tour' ? 'chat' : 'tour')}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-spus-gold/50 bg-spus-gold/10 text-spus-gold hover:bg-spus-gold/20 transition-colors text-sm font-semibold"
+              className="tour-toggle-btn"
             >
               <span>🧭</span>
-              <span className="hidden sm:inline">Smart Virtual Tour</span>
+              <span className="tour-btn-label">Smart Virtual Tour</span>
             </button>
             <ThemeToggle />
             {isGuest && (
               <button 
                 onClick={onNavigateLogin} 
-                style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, cursor: 'pointer', fontSize: '1em' }}
+                style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, cursor: 'pointer', fontSize: '0.9em' }}
               >
                 Login
               </button>
@@ -256,29 +305,31 @@ export default function Dashboard({ user, onLogout, onNavigateLogin, messages, i
 
         <div className="messages-container">
           {isChatEmpty ? (
-            <div className="empty-state">
-              <img 
-                src="/spus-logo.webp" 
-                alt="SPUS Logo" 
-                style={{ height: '100px', width: '100px', objectFit: 'contain', marginBottom: '20px', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.2))' }}
-              />
-              <h1>PauliBot</h1>
-              <p>Saint Paul University Surigao AI Assistant</p>
+            <div className="empty-chat-state">
+              <div className="w-24 h-24 mb-4 mx-auto flex items-center justify-center">
+                 <img 
+                   src="/spus-logo.webp" 
+                   alt="SPUS Logo" 
+                   className="w-full h-full object-contain" 
+                   style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.2))' }} 
+                 />
+              </div>
+              <h2 className="empty-chat-title">
+                PauliBot
+              </h2>
+              <p className="empty-chat-subtitle">
+                Saint Paul University Surigao AI Assistant
+              </p>
+              
               {isGuest && (
-                <p style={{ marginTop: '10px', color: '#D4AF37', fontWeight: 600 }}>⚠️ Guest Mode: Chat history not saved</p>
+                <div className="guest-warning-badge">
+                  <span>⚠️</span>
+                  <span>Guest Mode: Chat history not saved</span>
+                </div>
               )}
-
-              <div className="suggestions">
-                {[
-                  "What courses are available?",
-                  "How do I enroll?",
-                  "Where is the registrar office?",
-                  "School calendar activities"
-                ].map((prompt, i) => (
-                  <div key={i} className="suggestion-card" onClick={() => { if (!isTyping) onSend(prompt); }}>
-                    {prompt}
-                  </div>
-                ))}
+              
+              <div style={{ width: '100%', maxWidth: '600px', marginTop: isGuest ? '10px' : '30px' }}>
+                <PromptGrid onPromptClick={(prompt) => { if (!isTyping) onSend(prompt); }} />
               </div>
             </div>
           ) : (

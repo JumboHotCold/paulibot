@@ -1,6 +1,6 @@
 import { Plus, MessageSquare } from 'lucide-react';
 
-export default function Sidebar({ user, onLogout, onNewChat, conversations }) {
+export default function Sidebar({ user, onLogout, onNewChat, conversations, onDeleteChat, onLoadChat }) {
   // Extract initial
   const initial = user?.name ? user.name.charAt(0).toUpperCase() : 'S';
 
@@ -24,15 +24,24 @@ export default function Sidebar({ user, onLogout, onNewChat, conversations }) {
           <p className="text-xs text-gray-400 text-center mt-6 font-medium">No previous chats</p>
         ) : (
           conversations.map((conv) => (
-            <button
-              key={conv.id}
-              className="w-full text-left px-3 py-2.5 rounded-md text-[0.85rem] text-gray-700 font-medium
-                         hover:bg-white hover:shadow-sm border border-transparent hover:border-gray-200
-                         truncate flex items-center gap-2 transition-all"
-            >
-              <MessageSquare className="w-4 h-4 shrink-0 text-gray-400" />
-              <span className="truncate">{conv.title || "New Chat"}</span>
-            </button>
+            <div key={conv.id} className="w-full flex items-center pr-2 group">
+              <button
+                onClick={() => onLoadChat && onLoadChat(conv.id)}
+                className="flex-1 text-left px-3 py-2.5 rounded-md text-[0.85rem] text-gray-700 font-medium
+                           hover:bg-white hover:shadow-sm border border-transparent hover:border-gray-200
+                           truncate flex items-center gap-2 transition-all"
+              >
+                <MessageSquare className="w-4 h-4 shrink-0 text-gray-400" />
+                <span className="truncate">{conv.title || "New Chat"}</span>
+              </button>
+              <button 
+                onClick={(e) => { e.stopPropagation(); onDeleteChat && onDeleteChat(conv.id); }}
+                className="opacity-0 group-hover:opacity-100 p-1.5 text-red-400 hover:text-red-600 transition-opacity"
+                title="Delete Chat"
+              >
+                🗑️
+              </button>
+            </div>
           ))
         )}
       </div>

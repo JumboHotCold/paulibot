@@ -12,7 +12,7 @@ export default function PromptGrid({ onPromptClick }) {
         <button
           key={i}
           onClick={() => onPromptClick(p)}
-          className="prompt-card"
+          className="suggestion-card text-left"
         >
           {p}
         </button>

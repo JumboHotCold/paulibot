@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "start": "vite",
+    "start": "kill-port 8000 & concurrently \"vite\" \"cd .. && .\\venv\\Scripts\\python manage.py runserver 8000\"",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
@@ -17,11 +17,14 @@
     "react-dom": "^19.1.0",
     "react-photo-sphere-viewer": "^6.2.3",
     "react-router-dom": "^7.13.2",
-    "recharts": "^3.8.1"
+    "recharts": "^3.8.1",
+    "sweetalert2": "^11.26.24"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.3",
     "@vitejs/plugin-react": "^4.4.1",
+    "concurrently": "^9.2.1",
+    "kill-port": "^2.0.1",
     "tailwindcss": "^4.1.3",
     "vite": "^6.3.1"
   }

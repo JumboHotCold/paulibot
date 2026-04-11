@@ -45,6 +45,24 @@ const NODES = {
         data: { targetNode: 'cafeteria' }
       }
     ]
+  },
+  'main_entrance': {
+    id: 'main_entrance',
+    name: 'Main Entrance',
+    description: 'The main gateway to the SPUS campus.',
+    top: '47.63%',
+    left: '84.11%',
+    panorama: '/images/SmartVirtualTour/Main_Entrance.jpg',
+    markers: []
+  },
+  'court': {
+    id: 'court',
+    name: 'Campus Court',
+    description: 'The main sports and activity court.',
+    top: '28.44%',
+    left: '63.50%',
+    panorama: '/images/SmartVirtualTour/COURT.jpg',
+    markers: []
   }
 };
 
@@ -52,6 +70,7 @@ export default function VirtualTour({ className = "" }) {
   const [viewMode, setViewMode] = useState('aerial'); // 'aerial' | '360'
   const [currentNodeId, setCurrentNodeId] = useState(null);
   const [hoveredNode, setHoveredNode] = useState(null);
+  const [tappedNode, setTappedNode] = useState(null);
   const psvRef = useRef(null);
 
   // Update viewer when the node changes
@@ -101,23 +120,54 @@ export default function VirtualTour({ className = "" }) {
     alert(`Node Target Coordinates copied to console!\nTop: ${yPercent}%\nLeft: ${xPercent}%\n\nPaste these replacing the placeholder coordinates in VirtualTour.jsx NODES object.`);
   };
 
+  // Handle node tap on mobile (toggle tooltip) or click to enter
+  const handleNodeInteraction = (e, node) => {
+    e.stopPropagation();
+    // On mobile, first tap shows tooltip, second tap enters 360
+    if ('ontouchstart' in window) {
+      if (tappedNode === node.id) {
+        // Second tap - enter 360 view
+        setCurrentNodeId(node.id);
+        setViewMode('360');
+        setTappedNode(null);
+      } else {
+        // First tap - show tooltip
+        setTappedNode(node.id);
+        setHoveredNode(node.id);
+      }
+    } else {
+      // Desktop - direct click enters 360
+      setCurrentNodeId(node.id);
+      setViewMode('360');
+    }
+  };
+
+  // Clear tapped node when tapping elsewhere
+  const handleContainerTap = (e) => {
+    if (tappedNode) {
+      setTappedNode(null);
+      setHoveredNode(null);
+    }
+    handleImageClickCoordLogger(e);
+  };
+
   if (viewMode === 'aerial') {
     return (
-      <div className={`relative w-full h-full rounded-2xl overflow-hidden shadow-lg border border-gray-200 bg-[#E8EAE6] flex flex-col ${className}`}>
+      <div className={`virtual-tour-container relative w-full h-full rounded-2xl overflow-hidden shadow-lg border border-gray-200 bg-[#E8EAE6] flex flex-col ${className}`}>
         {/* Header */}
-        <div className="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur px-4 py-2 rounded-xl shadow border border-gray-200 pointer-events-none">
+        <div className="vt-header absolute top-3 left-3 z-10 bg-white/90 backdrop-blur px-3 py-1.5 rounded-xl shadow border border-gray-200 pointer-events-none">
           <span className="text-xs text-spus-green font-bold uppercase tracking-wider block">Smart Virtual Tour</span>
-          <span className="text-sm font-semibold text-gray-800">Select a Location</span>
+          <span className="vt-header-subtitle text-sm font-semibold text-gray-800">Select a Location</span>
         </div>
 
         {/* Aerial Image Container */}
-        <div className="flex-1 w-full h-full relative flex items-center justify-center p-4">
-          <div className="relative max-w-full max-h-full">
+        <div className="flex-1 w-full h-full relative flex items-center justify-center p-2 sm:p-4">
+          <div className="relative w-full h-full flex items-center justify-center">
             <img 
               src="/images/SmartVirtualTour/SPUS_aerial_view.png" 
               alt="SPUS Aerial View" 
-              className="max-h-[80vh] w-auto h-auto object-contain shadow-lg rounded-xl cursor-crosshair border border-gray-300"
-              onClick={handleImageClickCoordLogger}
+              className="vt-aerial-img max-h-full w-auto h-auto object-contain shadow-lg rounded-xl cursor-crosshair border border-gray-300"
+              onClick={handleContainerTap}
             />
 
             {/* Render interactive nodes */}
@@ -127,31 +177,27 @@ export default function VirtualTour({ className = "" }) {
                 className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group cursor-pointer z-10"
                 style={{ top: node.top, left: node.left }}
                 onMouseEnter={() => setHoveredNode(node.id)}
-                onMouseLeave={() => setHoveredNode(null)}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setCurrentNodeId(node.id);
-                  setViewMode('360');
-                }}
+                onMouseLeave={() => { if (tappedNode !== node.id) setHoveredNode(null); }}
+                onClick={(e) => handleNodeInteraction(e, node)}
               >
                 {/* Visual Pin */}
                 <div className="relative">
                   <div className="absolute inset-0 bg-spus-gold rounded-full animate-ping opacity-75"></div>
-                  <div className="relative w-7 h-7 bg-spus-green border-[3px] border-white rounded-full shadow-lg flex items-center justify-center text-white text-xs font-bold ring-2 ring-spus-gold/50 hover:scale-110 transition-transform">
+                  <div className="vt-pin relative w-6 h-6 sm:w-7 sm:h-7 bg-spus-green border-2 sm:border-[3px] border-white rounded-full shadow-lg flex items-center justify-center text-white text-[10px] sm:text-xs font-bold ring-2 ring-spus-gold/50 hover:scale-110 transition-transform">
                     {node.id.charAt(0).toUpperCase()}
                   </div>
                 </div>
 
                 {/* Info Tooltip Hook into Hover */}
                 <div className={`
-                  absolute top-9 w-48 bg-white/95 backdrop-blur shadow-xl rounded-xl p-3 border border-gray-200/80 
+                  vt-tooltip absolute top-8 sm:top-9 w-40 sm:w-48 bg-white/95 backdrop-blur shadow-xl rounded-xl p-2.5 sm:p-3 border border-gray-200/80 
                   transition-all duration-200 ease-out origin-top pointer-events-none z-20
-                  ${hoveredNode === node.id ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}
+                  ${(hoveredNode === node.id || tappedNode === node.id) ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}
                 `}>
-                   <h4 className="font-bold text-spus-green mb-1 text-sm">{node.name}</h4>
-                   <p className="text-xs text-gray-600 leading-tight border-b border-gray-100 pb-2 mb-2">{node.description}</p>
-                   <div className="flex items-center gap-2 text-[10px] font-bold text-spus-gold uppercase tracking-wider">
-                     <span>📸</span> Click to Enter 360°
+                   <h4 className="font-bold text-spus-green mb-1 text-xs sm:text-sm">{node.name}</h4>
+                   <p className="text-[10px] sm:text-xs text-gray-600 leading-tight border-b border-gray-100 pb-2 mb-2">{node.description}</p>
+                   <div className="flex items-center gap-2 text-[9px] sm:text-[10px] font-bold text-spus-gold uppercase tracking-wider">
+                     <span>📸</span> {('ontouchstart' in window) ? 'Tap again to enter 360°' : 'Click to Enter 360°'}
                    </div>
                 </div>
               </div>
@@ -169,18 +215,18 @@ export default function VirtualTour({ className = "" }) {
   ];
 
   return (
-    <div className={`relative w-full h-full rounded-2xl overflow-hidden shadow-lg border border-gray-200 ${className}`}>
+    <div className={`virtual-tour-container relative w-full h-full rounded-2xl overflow-hidden shadow-lg border border-gray-200 ${className}`}>
       {/* Overlay header */}
-      <div className="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur px-4 py-2 rounded-xl shadow border border-gray-200 flex flex-col pointer-events-none">
+      <div className="vt-header absolute top-3 left-3 z-10 bg-white/90 backdrop-blur px-3 py-1.5 rounded-xl shadow border border-gray-200 flex flex-col pointer-events-none">
         <span className="text-xs text-spus-gold font-bold uppercase tracking-wider">Smart Virtual Tour</span>
-        <span className="text-sm font-semibold text-gray-800">{currentNode?.name}</span>
+        <span className="vt-header-subtitle text-sm font-semibold text-gray-800">{currentNode?.name}</span>
       </div>
 
       <button 
-        className="absolute bottom-4 left-4 z-10 bg-white shadow py-2 px-4 rounded-xl font-bold flex items-center gap-2 hover:bg-gray-50 border border-gray-200"
+        className="vt-back-btn absolute bottom-3 left-3 z-10 bg-white shadow py-2 px-3 sm:px-4 rounded-xl font-bold flex items-center gap-2 hover:bg-gray-50 border border-gray-200 text-sm"
         onClick={() => setViewMode('aerial')}
       >
-        <span>🔙</span> Back to Aerial View
+        <span>🔙</span> <span className="vt-back-label">Back to Aerial View</span>
       </button>
       
       <ReactPhotoSphereViewer

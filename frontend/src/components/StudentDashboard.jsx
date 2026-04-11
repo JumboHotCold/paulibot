@@ -6,7 +6,7 @@ import MessageBubble from './MessageBubble';
 import TypingIndicator from './TypingIndicator';
 import ChatInput from './ChatInput';
 
-export default function StudentDashboard({ user, onLogout, messages, isTyping, onSend, onNewChat, conversations = [] }) {
+export default function StudentDashboard({ user, onLogout, messages, isTyping, onSend, onNewChat, conversations = [], onDeleteChat, onLoadChat }) {
   const bottomRef = useRef(null);
 
   useEffect(() => {
@@ -19,7 +19,7 @@ export default function StudentDashboard({ user, onLogout, messages, isTyping, o
     <div className="h-full w-full flex bg-white font-body">
       
       {/* SIDEBAR */}
-      <Sidebar user={user} onLogout={onLogout} onNewChat={onNewChat} conversations={conversations} />
+      <Sidebar user={user} onLogout={onLogout} onNewChat={onNewChat} conversations={conversations} onDeleteChat={onDeleteChat} onLoadChat={onLoadChat} />
 
       {/* MAIN CHAT AREA */}
       <main className="flex-1 flex flex-col h-full relative overflow-hidden">
@@ -48,14 +48,14 @@ export default function StudentDashboard({ user, onLogout, messages, isTyping, o
           <div className="w-full max-w-4xl mx-auto h-full flex flex-col">
             
             {isChatEmpty ? (
-              <div className="flex-1 flex flex-col items-center justify-center p-6 h-full mt-[-80px]">
-                <div className="w-24 h-24 mb-4">
+              <div className="flex-1 flex flex-col items-center justify-center p-6 h-full mt-[-80px] w-full">
+                <div className="w-24 h-24 mb-4 mx-auto flex items-center justify-center">
                    <img src="/spus-logo.webp" alt="SPUS Logo" className="w-full h-full object-contain filter drop-shadow-md" />
                 </div>
-                <h1 className="text-[2.5rem] text-[#004d26] font-bold mb-1 tracking-tight" style={{ fontFamily: 'var(--font-family-heading)' }}>
+                <h1 className="text-[2.5rem] text-[#004d26] font-bold mb-1 tracking-tight text-center" style={{ fontFamily: 'var(--font-family-heading)' }}>
                   PauliBot
                 </h1>
-                <p className="text-gray-500 text-[0.95rem] mb-10 font-medium">
+                <p className="text-gray-500 text-[0.95rem] mb-10 font-medium text-center">
                   Saint Paul University Surigao AI Assistant
                 </p>
                 <PromptGrid onPromptClick={onSend} />

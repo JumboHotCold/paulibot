@@ -9,6 +9,7 @@
  */
 
 import { useState } from 'react';
+import { getCookie, ensureCsrfToken } from '../api/chatApi';
 
 export default function LoginPage({ onLogin }) {
   const [studentId, setStudentId] = useState('');
@@ -30,10 +31,15 @@ export default function LoginPage({ onLogin }) {
     setError('');
 
     try {
+      await ensureCsrfToken();
+      const csrfToken = getCookie('csrftoken');
       const res = await fetch('/api/login', {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(csrfToken && { 'X-CSRFToken': csrfToken }),
+        },
         body: JSON.stringify({
           student_id: studentId.trim(),
           password: password,
