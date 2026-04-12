@@ -4,7 +4,7 @@ This migrates the hardcoded data into the PostgreSQL database so Faculty can man
 """
 from django.core.management.base import BaseCommand
 from chatbot.models import Location, StaffMember, FAQ
-from chatbot.data import LOCATIONS, STAFF, ADMISSIONS_FAQ
+from chatbot.data import LOCATIONS, STAFF, FAQS
 
 
 class Command(BaseCommand):
@@ -15,38 +15,38 @@ class Command(BaseCommand):
 
         # Seed Locations
         for key, data in LOCATIONS.items():
-            obj, created = Location.objects.get_or_create(
+            obj, created = Location.objects.update_or_create(
                 name=data['name'],
                 defaults={
                     'description': data['description'],
                     'map_available': data.get('map_available', False),
                 }
             )
-            status = "CREATED" if created else "EXISTS"
+            status = "CREATED" if created else "UPDATED"
             self.stdout.write(f"  [{status}] Location: {obj.name}")
 
         # Seed Staff
         for key, data in STAFF.items():
-            obj, created = StaffMember.objects.get_or_create(
+            obj, created = StaffMember.objects.update_or_create(
                 name=data['name'],
                 defaults={
                     'position': data['position'],
                     'office': data['office'],
                 }
             )
-            status = "CREATED" if created else "EXISTS"
+            status = "CREATED" if created else "UPDATED"
             self.stdout.write(f"  [{status}] Staff: {obj.name}")
 
         # Seed FAQs
-        for key, text in ADMISSIONS_FAQ.items():
-            obj, created = FAQ.objects.get_or_create(
-                category=key.capitalize(),
+        for faq_data in FAQS:
+            obj, created = FAQ.objects.update_or_create(
+                question=faq_data['question'],
                 defaults={
-                    'question': f"What is the {key} information?",
-                    'answer': text,
+                    'category': faq_data['category'],
+                    'answer': faq_data['answer'],
                 }
             )
-            status = "CREATED" if created else "EXISTS"
-            self.stdout.write(f"  [{status}] FAQ: {obj.category}")
+            status = "CREATED" if created else "UPDATED"
+            self.stdout.write(f"  [{status}] FAQ: {obj.question}")
 
         self.stdout.write(self.style.SUCCESS("\nKnowledge Base seeded successfully!"))

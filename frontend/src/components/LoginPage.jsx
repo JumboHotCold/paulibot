@@ -41,7 +41,7 @@ export default function LoginPage({ onLogin }) {
           ...(csrfToken && { 'X-CSRFToken': csrfToken }),
         },
         body: JSON.stringify({
-          student_id: studentId.trim(),
+          username: studentId.trim(),
           password: password,
         }),
       });

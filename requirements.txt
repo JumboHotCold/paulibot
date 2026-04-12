@@ -1,4 +1,4 @@
-﻿aiohappyeyeballs==2.6.1
+aiohappyeyeballs==2.6.1
 aiohttp==3.13.3
 aiosignal==1.4.0
 annotated-doc==0.0.4
@@ -92,3 +92,4 @@ yarl==1.22.0
 psycopg2-binary==2.9.9
 pgvector
 groq>=0.25.0
+django-unfold==0.80.2

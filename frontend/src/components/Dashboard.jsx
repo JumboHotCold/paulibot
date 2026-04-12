@@ -288,24 +288,7 @@ export default function Dashboard({ user, onLogout, onNavigateLogin, messages, i
           </div>
         </header>
 
-        {announcement && (
-          <div className="announcement-banner" style={{
-            background: 'rgba(212, 175, 55, 0.15)',
-            borderBottom: '1px solid var(--color-accent)',
-            padding: '12px 20px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '4px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-accent)', fontWeight: 600 }}>
-              <span>📢</span>
-              <span>{announcement.title}</span>
-            </div>
-            <div style={{ color: 'var(--color-text)', fontSize: '0.9em', lineHeight: 1.4, paddingLeft: '24px' }}>
-              {announcement.content}
-            </div>
-          </div>
-        )}
+        {/* Announcement banner removed as per user request */}
 
         <div className="messages-container">
           {isChatEmpty ? (

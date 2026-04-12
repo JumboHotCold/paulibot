@@ -216,6 +216,15 @@ export default function AdminDashboard({ user, onBackToChat }) {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           <ThemeToggle />
+          <a 
+            href="http://localhost:8000/admin/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="admin-action-btn primary"
+            style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
+            <span>🛡️</span> Full Power Admin (Unfold)
+          </a>
           <button className="admin-back-btn" onClick={onBackToChat}>
             ← Back to Chat
           </button>

@@ -10,12 +10,13 @@ class StudentIDBackend(ModelBackend):
         # In this context, 'username' will contain whatever the user typed
         # in the 'Student ID' field on the login page.
         
-        # 1. Try to find user by student_id
+        # 1. Try to find user by student_id (Case-insensitive check)
         try:
-            user = CustomUser.objects.get(student_id=username)
+            # We use __iexact to ensure that "c-2024" and "C-2024" both work
+            user = CustomUser.objects.get(student_id__iexact=username)
             if user.check_password(password):
                 return user
-        except CustomUser.DoesNotExist:
+        except (CustomUser.DoesNotExist, CustomUser.MultipleObjectsReturned):
             pass
             
         # 2. Fallback to standard username authentication (for Admins)

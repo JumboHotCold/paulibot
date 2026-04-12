@@ -32,7 +32,10 @@ class CustomUser(AbstractUser):
     student_id = models.CharField(
         max_length=20,
         unique=True,
-        help_text="Student ID number (e.g., 2024-00001)"
+        null=True,
+        blank=True,
+        default=None,
+        help_text="Student ID number (e.g., 2024-00001). Leave blank for admin/staff accounts."
     )
     nickname = models.CharField(
         max_length=30, 
@@ -53,7 +56,9 @@ class CustomUser(AbstractUser):
         ordering = ['-date_joined']
     
     def __str__(self):
-        return f"{self.student_id} - {self.username}"
+        if self.student_id:
+            return f"{self.student_id} - {self.username}"
+        return f"[Admin] {self.username}"
 
 
 class Conversation(models.Model):

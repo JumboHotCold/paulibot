@@ -56,9 +56,11 @@ class UserLoginSerializer(serializers.Serializer):
     """
     Serializer for user login endpoint.
     
-    Validates student_id and password against database.
+    Validates identifier (Student ID or Username) and password against database.
+    Accepts both 'username' and 'student_id' keys for the identifier to ensure compatibility.
     """
-    student_id = serializers.CharField(required=True)
+    username = serializers.CharField(required=False)
+    student_id = serializers.CharField(required=False)
     password = serializers.CharField(
         required=True,
         write_only=True,
@@ -68,23 +70,22 @@ class UserLoginSerializer(serializers.Serializer):
     def validate(self, data):
         """
         Validate credentials using Django's authenticate() method.
-        
-        This method checks the hashed password against the database.
         """
-        student_id = data.get('student_id')
+        # Accept either 'username' or 'student_id' as the identifier
+        identifier = data.get('username') or data.get('student_id')
         password = data.get('password')
         
-        if student_id and password:
-            # We pass student_id as the 'username' parameter to authenticate()
-            # because our custom backend StudentIDBackend expects it there.
-            user = authenticate(username=student_id, password=password)
+        if identifier and password:
+            # Django's authenticate() will try our StudentIDBackend first (student_id check)
+            # and then falls back to ModelBackend (username check).
+            user = authenticate(username=identifier, password=password)
             if user is None:
-                raise serializers.ValidationError("Invalid Student ID or password.")
+                raise serializers.ValidationError("Invalid credentials. Please check your details.")
             if not user.is_active:
                 raise serializers.ValidationError("User account is disabled.")
             data['user'] = user
         else:
-            raise serializers.ValidationError("Must include 'student_id' and 'password'.")
+            raise serializers.ValidationError("Must include an identifier (Student ID or Username) and password.")
         
         return data
 

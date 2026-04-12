@@ -32,13 +32,18 @@ function AdminLogin({ onLogin, onBack }) {
           'Content-Type': 'application/json',
           ...(csrfToken && { 'X-CSRFToken': csrfToken }),
         },
-        body: JSON.stringify({ student_id: username, password }),
+        body: JSON.stringify({ username, password }),
       });
       const data = await res.json();
-      if (res.ok && data.is_superuser) {
-        onLogin({ type: 'ADMIN', id: username, name: data.name, is_superuser: true });
+      if (res.ok) {
+        if (data.is_superuser) {
+          onLogin({ type: 'ADMIN', id: username, name: data.name, is_superuser: true });
+        } else {
+          setError('Access denied. Administrator privileges required.');
+        }
       } else {
-        setError('Access denied. Administrator privileges required.');
+        const errorMsg = data.non_field_errors ? data.non_field_errors[0] : (data.error || 'Invalid username or password.');
+        setError(errorMsg);
       }
     } catch (err) {
       setError('Connection error. Please try again.');
