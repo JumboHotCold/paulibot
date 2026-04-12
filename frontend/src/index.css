@@ -1545,3 +1545,541 @@ body {
 }
 
 
+/* =========================================
+   CAMPUS NAVIGATION — 2D Map + Dijkstra
+   ========================================= */
+
+/* ── Container ── */
+.campus-nav-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    background: var(--color-surface, #fff);
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+}
+
+/* ── Header ── */
+.campus-nav-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background: var(--color-surface, #fff);
+    border-bottom: 1px solid var(--color-border, #e5e7eb);
+    z-index: 10;
+    flex-shrink: 0;
+}
+.campus-nav-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.campus-nav-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--spus-green, #0A4D2E);
+}
+.campus-nav-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-text, #333);
+}
+.campus-nav-header-right {
+    display: flex;
+    gap: 6px;
+}
+.campus-nav-mode-btn {
+    padding: 5px 10px;
+    border: 1px solid var(--color-border, #e5e7eb);
+    border-radius: 8px;
+    background: transparent;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--color-text-muted, #666);
+    transition: all 0.2s;
+}
+.campus-nav-mode-btn.active {
+    background: var(--spus-green, #0A4D2E);
+    color: white;
+    border-color: var(--spus-green, #0A4D2E);
+}
+.campus-nav-mode-btn:hover:not(.active) {
+    background: rgba(10, 77, 46, 0.06);
+    border-color: var(--spus-green, #0A4D2E);
+    color: var(--spus-green, #0A4D2E);
+}
+
+/* ── Map Area ── */
+.campus-nav-map-area {
+    flex: 1;
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    background: #f0f1ed;
+    position: relative;
+}
+.campus-nav-map-wrapper {
+    position: relative;
+    max-width: 100%;
+    max-height: 100%;
+    display: inline-block;
+}
+.campus-nav-map-img {
+    display: block;
+    max-width: 100%;
+    max-height: 70vh;
+    height: auto;
+    width: auto;
+    object-fit: contain;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    border: 1px solid #d1d5db;
+    cursor: crosshair;
+}
+.campus-nav-svg-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 5;
+}
+.campus-nav-svg-overlay circle,
+.campus-nav-svg-overlay text {
+    pointer-events: auto;
+}
+
+/* ── Animated path line ── */
+@keyframes campusNavDash {
+    to {
+        stroke-dashoffset: -20;
+    }
+}
+.campus-nav-path-line {
+    animation: campusNavDash 1.5s linear infinite;
+}
+
+/* ── Pulse animation for pins ── */
+@keyframes campusNavPulse {
+    0% { r: 1; opacity: 0.8; }
+    50% { r: 2.5; opacity: 0.2; }
+    100% { r: 1; opacity: 0.8; }
+}
+.campus-nav-pulse {
+    animation: campusNavPulse 2s ease-in-out infinite;
+}
+
+/* ── Node dot hover ── */
+.campus-nav-node-dot {
+    transition: r 0.15s ease, fill 0.15s ease;
+    cursor: pointer;
+}
+.campus-nav-node-dot:hover {
+    r: 1;
+}
+
+/* ── Tooltip ── */
+.campus-nav-tooltip {
+    position: absolute;
+    z-index: 20;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding: 6px 10px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border: 1px solid rgba(0,0,0,0.08);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    pointer-events: none;
+    animation: fadeIn 0.15s ease-out;
+}
+.campus-nav-tooltip-icon {
+    font-size: 0.85rem;
+}
+.campus-nav-tooltip-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #333;
+}
+
+/* ── Origin Picker Panel ── */
+.campus-nav-origin-panel {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+    max-width: 360px;
+    background: rgba(255,255,255,0.96);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    border: 1px solid rgba(255,255,255,0.5);
+    padding: 16px;
+    z-index: 15;
+    animation: slideUp 0.3s ease-out;
+    max-height: 50%;
+    display: flex;
+    flex-direction: column;
+}
+.campus-nav-origin-panel-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+.campus-nav-origin-icon {
+    font-size: 1.4rem;
+    flex-shrink: 0;
+}
+.campus-nav-origin-dest-label {
+    font-size: 0.78rem;
+    color: var(--color-text-muted, #666);
+}
+.campus-nav-origin-dest-label strong {
+    color: var(--spus-green, #0A4D2E);
+}
+.campus-nav-origin-prompt {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--color-text, #333);
+    margin-top: 2px;
+}
+.campus-nav-search-input {
+    width: 100%;
+    padding: 9px 14px;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    outline: none;
+    background: white;
+    transition: border-color 0.2s;
+    margin-bottom: 8px;
+}
+.campus-nav-search-input:focus {
+    border-color: var(--spus-green, #0A4D2E);
+    box-shadow: 0 0 0 3px rgba(10,77,46,0.08);
+}
+.campus-nav-location-list {
+    overflow-y: auto;
+    max-height: 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.campus-nav-location-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    color: var(--color-text, #333);
+    text-align: left;
+    width: 100%;
+    transition: background 0.15s;
+}
+.campus-nav-location-item:hover {
+    background: rgba(10,77,46,0.06);
+}
+.campus-nav-location-item-icon {
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+/* ── Directions Panel ── */
+.campus-nav-directions-panel {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255,255,255,0.97);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(0,0,0,0.08);
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+    z-index: 15;
+    animation: slideUp 0.3s ease-out;
+    max-height: 60%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.campus-nav-directions-toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+}
+.campus-nav-directions-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.campus-nav-directions-summary > span:first-child {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--spus-green, #0A4D2E);
+}
+.campus-nav-directions-time {
+    font-size: 0.75rem;
+    color: var(--color-text-muted, #666);
+}
+.campus-nav-directions-chevron {
+    font-size: 0.75rem;
+    color: var(--color-text-muted, #666);
+}
+.campus-nav-directions-steps {
+    padding: 0 16px 16px;
+    overflow-y: auto;
+    flex: 1;
+}
+.campus-nav-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    position: relative;
+    animation: fadeIn 0.3s ease-out both;
+}
+.campus-nav-step:nth-child(1) { animation-delay: 0.05s; }
+.campus-nav-step:nth-child(2) { animation-delay: 0.1s; }
+.campus-nav-step:nth-child(3) { animation-delay: 0.15s; }
+.campus-nav-step:nth-child(4) { animation-delay: 0.2s; }
+.campus-nav-step:nth-child(5) { animation-delay: 0.25s; }
+.campus-nav-step:nth-child(6) { animation-delay: 0.3s; }
+.campus-nav-step:nth-child(7) { animation-delay: 0.35s; }
+.campus-nav-step:nth-child(8) { animation-delay: 0.4s; }
+.campus-nav-step-icon {
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    width: 20px;
+    text-align: center;
+}
+.campus-nav-step-text {
+    font-size: 0.82rem;
+    color: var(--color-text, #333);
+    line-height: 1.4;
+}
+.campus-nav-step.start .campus-nav-step-text {
+    font-weight: 700;
+    color: #16a34a;
+}
+.campus-nav-step.end .campus-nav-step-text {
+    font-weight: 700;
+    color: #dc2626;
+}
+.campus-nav-step-connector {
+    position: absolute;
+    left: 9px;
+    top: 28px;
+    bottom: -8px;
+    width: 2px;
+    background: linear-gradient(to bottom, #d1d5db, #e5e7eb);
+    border-radius: 1px;
+}
+.campus-nav-reset-btn {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    border: 1px solid var(--color-border, #e5e7eb);
+    border-radius: 10px;
+    background: transparent;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--color-text-muted, #666);
+    transition: all 0.2s;
+}
+.campus-nav-reset-btn:hover {
+    background: rgba(10,77,46,0.05);
+    border-color: var(--spus-green, #0A4D2E);
+    color: var(--spus-green, #0A4D2E);
+}
+
+/* ── Waypoint number ── */
+.campus-nav-waypoint-num {
+    font-family: 'Inter', sans-serif;
+    pointer-events: none;
+}
+
+/* ── Coordinate Mapper Panel ── */
+.campus-nav-mapper-panel {
+    position: absolute;
+    top: 50px;
+    right: 8px;
+    width: 280px;
+    max-height: calc(100% - 60px);
+    background: rgba(255,255,255,0.97);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 14px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    border: 1px solid rgba(0,0,0,0.08);
+    z-index: 15;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: fadeIn 0.3s ease-out;
+}
+.campus-nav-mapper-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    border-bottom: 1px solid #e5e7eb;
+}
+.campus-nav-mapper-header h3 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin: 0;
+}
+.campus-nav-mapper-progress {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--spus-green, #0A4D2E);
+    background: rgba(10,77,46,0.08);
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+.campus-nav-mapper-instructions {
+    font-size: 0.75rem;
+    color: var(--color-text-muted, #666);
+    padding: 8px 14px;
+    line-height: 1.4;
+    border-bottom: 1px solid #f3f4f6;
+}
+.campus-nav-mapper-instructions strong {
+    color: var(--spus-green, #0A4D2E);
+}
+.campus-nav-mapper-list {
+    overflow-y: auto;
+    flex: 1;
+    padding: 4px 6px;
+}
+.campus-nav-mapper-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 6px 8px;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.72rem;
+    text-align: left;
+    color: var(--color-text, #333);
+    transition: background 0.15s;
+}
+.campus-nav-mapper-item:hover {
+    background: #f3f4f6;
+}
+.campus-nav-mapper-item.active {
+    background: rgba(10,77,46,0.1);
+    outline: 2px solid var(--spus-green, #0A4D2E);
+}
+.campus-nav-mapper-item.mapped {
+    opacity: 0.7;
+}
+.campus-nav-mapper-status {
+    font-size: 0.7rem;
+    flex-shrink: 0;
+}
+.campus-nav-mapper-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.campus-nav-mapper-coords {
+    font-size: 0.65rem;
+    color: var(--color-text-muted, #666);
+    flex-shrink: 0;
+    font-family: monospace;
+}
+.campus-nav-mapper-copy-btn {
+    margin: 8px;
+    padding: 10px;
+    background: var(--spus-green, #0A4D2E);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.campus-nav-mapper-copy-btn:hover {
+    background: #083d25;
+}
+
+/* ── Dark mode overrides ── */
+html[data-theme='dark'] .campus-nav-map-area {
+    background: #1a1a1a;
+}
+html[data-theme='dark'] .campus-nav-origin-panel,
+html[data-theme='dark'] .campus-nav-directions-panel,
+html[data-theme='dark'] .campus-nav-mapper-panel {
+    background: rgba(30,30,30,0.97);
+    border-color: rgba(255,255,255,0.08);
+}
+html[data-theme='dark'] .campus-nav-tooltip {
+    background: rgba(30,30,30,0.95);
+    border-color: rgba(255,255,255,0.1);
+}
+html[data-theme='dark'] .campus-nav-tooltip-name {
+    color: #e0e0e0;
+}
+html[data-theme='dark'] .campus-nav-search-input {
+    background: #2a2a2a;
+    border-color: #444;
+    color: #e0e0e0;
+}
+html[data-theme='dark'] .campus-nav-mapper-item:hover {
+    background: #2a2a2a;
+}
+html[data-theme='dark'] .campus-nav-step-connector {
+    background: linear-gradient(to bottom, #444, #333);
+}
+
+/* ── Mobile responsive for campus nav ── */
+@media (max-width: 768px) {
+    .campus-nav-mapper-panel {
+        width: 220px;
+        right: 4px;
+        max-height: calc(100% - 52px);
+    }
+    .campus-nav-origin-panel {
+        max-width: 100%;
+        left: 8px;
+        right: 8px;
+        bottom: 8px;
+    }
+    .campus-nav-mode-btn {
+        padding: 4px 8px;
+        font-size: 0.7rem;
+    }
+}
+

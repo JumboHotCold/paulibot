@@ -1,51 +1,534 @@
-import React from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { CAMPUS_NODES, CAMPUS_EDGES, resolveLocationFromText } from '../data/campusGraph';
+import { findShortestPath, estimateWalkingTime } from '../utils/dijkstra';
 
-/**
- * MapModule Component — Campus 2D Interactive Map
- * ==============================================
- * Displays the 2D representation of the campus map.
- */
-export default function MapModule({ className = "" }) {
+// =============================================================================
+// NODE TYPE ICONS
+// =============================================================================
+const TYPE_ICONS = {
+  office: '🏢',
+  building: '🏫',
+  facility: '🔧',
+  landmark: '📍',
+  college: '🎓',
+};
 
-  const handleImageClickCoordLogger = (e) => {
+const TYPE_COLORS = {
+  office: '#2563eb',
+  building: '#7c3aed',
+  facility: '#059669',
+  landmark: '#d97706',
+  college: '#dc2626',
+};
+
+// =============================================================================
+// MapModule Component
+// =============================================================================
+export default function MapModule({ className = "", destination = null }) {
+  // ── State ──
+  const [mode, setMode] = useState('navigate'); // 'navigate' | 'mapper'
+  const [origin, setOrigin] = useState(null);
+  const [selectedDestination, setSelectedDestination] = useState(destination);
+  const [pathResult, setPathResult] = useState(null);
+  const [showDirections, setShowDirections] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showOriginPicker, setShowOriginPicker] = useState(!!destination);
+  const [hoveredNode, setHoveredNode] = useState(null);
+  
+  // ── Coordinate Mapper State ──
+  const [mapperCoords, setMapperCoords] = useState(() => {
+    // Initialize from CAMPUS_NODES
+    const coords = {};
+    Object.entries(CAMPUS_NODES).forEach(([id, node]) => {
+      coords[id] = { x: node.x, y: node.y };
+    });
+    return coords;
+  });
+  const [activeMapperNode, setActiveMapperNode] = useState(null);
+  
+  const imgRef = useRef(null);
+
+  // ── Sync destination prop ──
+  useEffect(() => {
+    if (destination) {
+      const resolvedId = resolveLocationFromText(destination) || destination;
+      if (CAMPUS_NODES[resolvedId]) {
+        setSelectedDestination(resolvedId);
+        setShowOriginPicker(true);
+        setOrigin(null);
+        setPathResult(null);
+      }
+    }
+  }, [destination]);
+
+  // ── Calculate path when origin & destination are both set ──
+  useEffect(() => {
+    if (origin && selectedDestination && origin !== selectedDestination) {
+      const result = findShortestPath(origin, selectedDestination);
+      setPathResult(result);
+      if (result) {
+        setShowDirections(true);
+        setShowOriginPicker(false);
+      }
+    } else {
+      setPathResult(null);
+    }
+  }, [origin, selectedDestination]);
+
+  // ── Image click handler ──
+  const handleImageClick = useCallback((e) => {
     const rect = e.target.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    const xPercent = ((x / rect.width) * 100).toFixed(2);
-    const yPercent = ((y / rect.height) * 100).toFixed(2);
-    
-    console.log(`Map Coordinate -> top: '${yPercent}%', left: '${xPercent}%'`);
-    alert(`Map Coordinates logged:\nTop: ${yPercent}%\nLeft: ${xPercent}%\n\nYou can use these to place absolute pins on the 2D Map!`);
+    const xPercent = parseFloat(((x / rect.width) * 100).toFixed(2));
+    const yPercent = parseFloat(((y / rect.height) * 100).toFixed(2));
+
+    if (mode === 'mapper' && activeMapperNode) {
+      // Save coordinate for active node
+      setMapperCoords(prev => ({
+        ...prev,
+        [activeMapperNode]: { x: xPercent, y: yPercent }
+      }));
+      
+      // Advance to next unmapped node
+      const nodeIds = Object.keys(CAMPUS_NODES);
+      const currentIdx = nodeIds.indexOf(activeMapperNode);
+      const nextUnmapped = nodeIds.find((id, idx) => {
+        if (idx <= currentIdx) return false;
+        const c = { ...mapperCoords, [activeMapperNode]: { x: xPercent, y: yPercent } };
+        return c[id].x === 0 && c[id].y === 0;
+      });
+      setActiveMapperNode(nextUnmapped || null);
+    }
+  }, [mode, activeMapperNode, mapperCoords]);
+
+  // ── Node click for navigation ──
+  const handleNodeClick = useCallback((nodeId) => {
+    if (mode === 'navigate') {
+      if (showOriginPicker && !origin) {
+        setOrigin(nodeId);
+      } else if (!selectedDestination) {
+        setSelectedDestination(nodeId);
+        setShowOriginPicker(true);
+      }
+    }
+  }, [mode, showOriginPicker, origin, selectedDestination]);
+
+  // ── Reset navigation ──
+  const resetNavigation = () => {
+    setOrigin(null);
+    setPathResult(null);
+    setShowDirections(false);
+    setShowOriginPicker(!!selectedDestination);
   };
 
-  return (
-    <div className={`glass-card rounded-2xl flex flex-col h-full min-h-[300px] relative overflow-hidden bg-white shadow-lg border border-gray-200 ${className}`}>
-      {/* Header */}
-      <div className="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur px-4 py-2 rounded-xl shadow border border-gray-200 flex flex-col pointer-events-none">
-        <span className="text-xs text-spus-green font-bold uppercase tracking-wider">Campus Nav</span>
-        <span className="text-sm font-semibold text-gray-800">Saint Paul University Surigao</span>
-      </div>
+  // ── Copy mapper JSON ──
+  const copyMapperJSON = () => {
+    const output = {};
+    Object.entries(mapperCoords).forEach(([id, coords]) => {
+      if (coords.x !== 0 || coords.y !== 0) {
+        output[id] = coords;
+      }
+    });
+    navigator.clipboard.writeText(JSON.stringify(output, null, 2));
+    alert('Coordinates copied to clipboard! Paste them into campusGraph.js');
+  };
 
-      {/* Map Content */}
-      <div className="absolute inset-0 w-full h-full p-4 overflow-auto bg-gray-50 flex items-center justify-center">
-        {/* We use an img tag for the 2D map. In a more complex app, this could be a Leaflet map with markers. */}
-        <div className="relative max-w-full max-h-full">
-            <img 
-              src="/images/2D_Mapping/ST.PAUL MAP.png" 
-              alt="SPUS Campus Map" 
-              className="object-contain rounded-xl shadow-md border border-gray-200 h-auto w-auto max-h-[80vh] md:max-h-full mx-auto cursor-crosshair"
-              onClick={handleImageClickCoordLogger}
-            />
-            {/* Example Hotspot/Pin, placed arbitrarily as an example.
-                You can add absolute positioned markers if you want specific location highlights based on what was asked. */}
-            {/* 
-            <div className="absolute top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center animate-bounce">
-               <span className="text-3xl">📍</span>
-               <span className="bg-white px-2 py-1 text-xs font-bold rounded shadow">Location</span>
-            </div> 
-            */}
+  // ── Helper: check if node is a waypoint (invisible routing node) ──
+  const isWaypoint = (nodeId) => CAMPUS_NODES[nodeId]?.type === 'waypoint';
+
+  // ── Filter nodes by search (excluding waypoints from UI) ──
+  const filteredNodes = Object.values(CAMPUS_NODES).filter(node =>
+    node.type !== 'waypoint' && (
+      node.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      node.aliases.some(a => a.toLowerCase().includes(searchQuery.toLowerCase()))
+    )
+  );
+
+  // ── Check if coordinates are mapped ──
+  const hasCoordinates = (nodeId) => {
+    const node = CAMPUS_NODES[nodeId];
+    return node && (node.x !== 0 || node.y !== 0);
+  };
+
+  // Use mapper coordinates if in mapper mode, otherwise use CAMPUS_NODES
+  const getNodeCoords = (nodeId) => {
+    if (mode === 'mapper') {
+      return mapperCoords[nodeId] || { x: 0, y: 0 };
+    }
+    return { x: CAMPUS_NODES[nodeId]?.x || 0, y: CAMPUS_NODES[nodeId]?.y || 0 };
+  };
+
+  // ── Get path polyline points ──
+  const getPathPoints = () => {
+    if (!pathResult || !pathResult.path) return '';
+    return pathResult.path
+      .map(nodeId => {
+        const coords = getNodeCoords(nodeId);
+        return `${coords.x},${coords.y}`;
+      })
+      .join(' ');
+  };
+
+  const mappedCount = Object.values(mapperCoords).filter(c => c.x !== 0 || c.y !== 0).length;
+  const totalCount = Object.keys(CAMPUS_NODES).length;
+
+  return (
+    <div className={`campus-nav-container ${className}`}>
+      {/* ── Header Bar ── */}
+      <div className="campus-nav-header">
+        <div className="campus-nav-header-left">
+          <span className="campus-nav-badge">Campus Nav</span>
+          <span className="campus-nav-title">Saint Paul University Surigao</span>
+        </div>
+        <div className="campus-nav-header-right">
+          <button
+            className={`campus-nav-mode-btn ${mode === 'navigate' ? 'active' : ''}`}
+            onClick={() => setMode('navigate')}
+          >
+            🧭 Navigate
+          </button>
+          <button
+            className={`campus-nav-mode-btn ${mode === 'mapper' ? 'active' : ''}`}
+            onClick={() => setMode('mapper')}
+          >
+            📐 Map Coords
+          </button>
         </div>
       </div>
+
+      {/* ── Map Area ── */}
+      <div className="campus-nav-map-area">
+        <div className="campus-nav-map-wrapper">
+          {/* The map image */}
+          <img
+            ref={imgRef}
+            src="/images/2D_Mapping/ST.PAUL MAP.png"
+            alt="SPUS Campus Map"
+            className="campus-nav-map-img"
+            onClick={handleImageClick}
+          />
+
+          {/* ── SVG Overlay for nodes, path, pins ── */}
+          <svg className="campus-nav-svg-overlay" viewBox="0 0 100 100" preserveAspectRatio="none">
+            {/* Animated path line */}
+            {pathResult && pathResult.path.length > 1 && (
+              <>
+                {/* Shadow/glow for path */}
+                <polyline
+                  points={getPathPoints()}
+                  fill="none"
+                  stroke="rgba(0,107,63,0.3)"
+                  strokeWidth="1.2"
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                />
+                {/* Main animated path */}
+                <polyline
+                  className="campus-nav-path-line"
+                  points={getPathPoints()}
+                  fill="none"
+                  stroke="#006B3F"
+                  strokeWidth="0.6"
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                  strokeDasharray="1.5 0.8"
+                />
+              </>
+            )}
+
+            {/* Node dots */}
+            {Object.values(CAMPUS_NODES).map(node => {
+              if (node.type === 'waypoint') return null; // Hide corridor waypoints
+              const coords = getNodeCoords(node.id);
+              if (coords.x === 0 && coords.y === 0) return null;
+
+              const isOrigin = origin === node.id;
+              const isDest = selectedDestination === node.id;
+              const isOnPath = pathResult?.path?.includes(node.id);
+              const isHovered = hoveredNode === node.id;
+
+              let fillColor = '#9ca3af';
+              let radius = 0.6;
+              let strokeColor = 'white';
+              let strokeWidth = 0.15;
+
+              if (isOrigin) {
+                fillColor = '#22c55e';
+                radius = 1;
+                strokeWidth = 0.25;
+              } else if (isDest) {
+                fillColor = '#ef4444';
+                radius = 1;
+                strokeWidth = 0.25;
+              } else if (isOnPath) {
+                fillColor = '#d4af37';
+                radius = 0.8;
+              } else if (isHovered) {
+                fillColor = TYPE_COLORS[node.type] || '#6b7280';
+                radius = 0.8;
+              }
+
+              return (
+                <g key={node.id}>
+                  {/* Pulse animation for destination */}
+                  {isDest && (
+                    <circle
+                      cx={coords.x}
+                      cy={coords.y}
+                      r={1.5}
+                      fill="none"
+                      stroke="#ef4444"
+                      strokeWidth="0.15"
+                      className="campus-nav-pulse"
+                    />
+                  )}
+                  {/* Pulse animation for origin */}
+                  {isOrigin && (
+                    <circle
+                      cx={coords.x}
+                      cy={coords.y}
+                      r={1.5}
+                      fill="none"
+                      stroke="#22c55e"
+                      strokeWidth="0.15"
+                      className="campus-nav-pulse"
+                    />
+                  )}
+                  {/* Node circle */}
+                  <circle
+                    cx={coords.x}
+                    cy={coords.y}
+                    r={radius}
+                    fill={fillColor}
+                    stroke={strokeColor}
+                    strokeWidth={strokeWidth}
+                    className="campus-nav-node-dot"
+                    onMouseEnter={() => setHoveredNode(node.id)}
+                    onMouseLeave={() => setHoveredNode(null)}
+                    onClick={(e) => { e.stopPropagation(); handleNodeClick(node.id); }}
+                    style={{ cursor: 'pointer' }}
+                  />
+                </g>
+              );
+            })}
+
+            {/* Waypoint numbers on path (only for real locations, not corridor bends) */}
+            {pathResult && (() => {
+              let visibleIdx = 0;
+              return pathResult.path.map((nodeId) => {
+                if (isWaypoint(nodeId)) return null;
+                const coords = getNodeCoords(nodeId);
+                if (coords.x === 0 && coords.y === 0) return null;
+                visibleIdx++;
+                return (
+                  <text
+                    key={`wp-${nodeId}`}
+                    x={coords.x}
+                    y={coords.y - 1.5}
+                    textAnchor="middle"
+                    className="campus-nav-waypoint-num"
+                    fontSize="0.9"
+                    fill="#006B3F"
+                    fontWeight="bold"
+                  >
+                    {visibleIdx}
+                  </text>
+                );
+              });
+            })()}
+          </svg>
+
+          {/* ── Hover tooltip (not for waypoints) ── */}
+          {hoveredNode && !isWaypoint(hoveredNode) && (() => {
+            const coords = getNodeCoords(hoveredNode);
+            const node = CAMPUS_NODES[hoveredNode];
+            if (coords.x === 0 && coords.y === 0) return null;
+            return (
+              <div
+                className="campus-nav-tooltip"
+                style={{
+                  left: `${coords.x}%`,
+                  top: `${coords.y}%`,
+                  transform: 'translate(-50%, -130%)',
+                }}
+              >
+                <span className="campus-nav-tooltip-icon">{TYPE_ICONS[node.type]}</span>
+                <span className="campus-nav-tooltip-name">{node.name}</span>
+              </div>
+            );
+          })()}
+        </div>
+      </div>
+
+      {/* ── NAVIGATE MODE: Origin Picker Panel ── */}
+      {mode === 'navigate' && showOriginPicker && !pathResult && (
+        <div className="campus-nav-origin-panel">
+          <div className="campus-nav-origin-panel-header">
+            <span className="campus-nav-origin-icon">📍</span>
+            <div>
+              <div className="campus-nav-origin-dest-label">
+                Destination: <strong>{CAMPUS_NODES[selectedDestination]?.name}</strong>
+              </div>
+              <div className="campus-nav-origin-prompt">Where are you right now?</div>
+            </div>
+          </div>
+          
+          <input
+            type="text"
+            className="campus-nav-search-input"
+            placeholder="Search location or click on the map..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          
+          <div className="campus-nav-location-list">
+            {filteredNodes
+              .filter(n => n.id !== selectedDestination && hasCoordinates(n.id))
+              .map(node => (
+              <button
+                key={node.id}
+                className="campus-nav-location-item"
+                onClick={() => setOrigin(node.id)}
+              >
+                <span className="campus-nav-location-item-icon">{TYPE_ICONS[node.type]}</span>
+                <span>{node.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── NAVIGATE MODE: No destination selected ── */}
+      {mode === 'navigate' && !selectedDestination && !pathResult && (
+        <div className="campus-nav-origin-panel">
+          <div className="campus-nav-origin-panel-header">
+            <span className="campus-nav-origin-icon">🧭</span>
+            <div>
+              <div className="campus-nav-origin-prompt">Select a destination</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-light, #6b7280)' }}>
+                Click a location on the map or search below
+              </div>
+            </div>
+          </div>
+          
+          <input
+            type="text"
+            className="campus-nav-search-input"
+            placeholder="Search for a location..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          
+          <div className="campus-nav-location-list">
+            {filteredNodes.filter(n => hasCoordinates(n.id)).map(node => (
+              <button
+                key={node.id}
+                className="campus-nav-location-item"
+                onClick={() => {
+                  setSelectedDestination(node.id);
+                  setShowOriginPicker(true);
+                  setSearchQuery('');
+                }}
+              >
+                <span className="campus-nav-location-item-icon">{TYPE_ICONS[node.type]}</span>
+                <span>{node.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── NAVIGATE MODE: Directions Panel ── */}
+      {mode === 'navigate' && pathResult && (
+        <div className={`campus-nav-directions-panel ${showDirections ? 'open' : 'collapsed'}`}>
+          <button
+            className="campus-nav-directions-toggle"
+            onClick={() => setShowDirections(!showDirections)}
+          >
+            <div className="campus-nav-directions-summary">
+              <span>📍 {CAMPUS_NODES[origin]?.name} → {CAMPUS_NODES[selectedDestination]?.name}</span>
+              <span className="campus-nav-directions-time">
+                ~{estimateWalkingTime(pathResult.distance)} min walk
+              </span>
+            </div>
+            <span className="campus-nav-directions-chevron">{showDirections ? '▼' : '▲'}</span>
+          </button>
+          
+          {showDirections && (
+            <div className="campus-nav-directions-steps">
+              {/* Filter out steps that reference corridor waypoints */}
+              {pathResult.steps
+                .filter(step => !step.nodeId || !isWaypoint(step.nodeId))
+                .map((step, idx, arr) => (
+                <div
+                  key={idx}
+                  className={`campus-nav-step ${idx === 0 ? 'start' : ''} ${idx === arr.length - 1 ? 'end' : ''}`}
+                >
+                  <span className="campus-nav-step-icon">{step.icon}</span>
+                  <span className="campus-nav-step-text">{step.instruction}</span>
+                  {idx < arr.length - 1 && (
+                    <div className="campus-nav-step-connector" />
+                  )}
+                </div>
+              ))}
+              
+              <button className="campus-nav-reset-btn" onClick={resetNavigation}>
+                🔄 Change Starting Point
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── MAPPER MODE Panel ── */}
+      {mode === 'mapper' && (
+        <div className="campus-nav-mapper-panel">
+          <div className="campus-nav-mapper-header">
+            <h3>📐 Coordinate Mapper</h3>
+            <span className="campus-nav-mapper-progress">{mappedCount}/{totalCount} mapped</span>
+          </div>
+          
+          <p className="campus-nav-mapper-instructions">
+            {activeMapperNode 
+              ? <>Click on the map to place <strong>{CAMPUS_NODES[activeMapperNode]?.name}</strong></>
+              : 'Select a node below, then click the map to set its position.'
+            }
+          </p>
+
+          <div className="campus-nav-mapper-list">
+            {Object.values(CAMPUS_NODES)
+              .filter(node => node.type !== 'waypoint') // Hide corridor waypoints from mapper
+              .map(node => {
+              const coords = mapperCoords[node.id];
+              const isMapped = coords && (coords.x !== 0 || coords.y !== 0);
+              const isActive = activeMapperNode === node.id;
+              
+              return (
+                <button
+                  key={node.id}
+                  className={`campus-nav-mapper-item ${isActive ? 'active' : ''} ${isMapped ? 'mapped' : ''}`}
+                  onClick={() => setActiveMapperNode(node.id)}
+                >
+                  <span className="campus-nav-mapper-status">
+                    {isMapped ? '✅' : '⬜'}
+                  </span>
+                  <span className="campus-nav-mapper-name">{node.name}</span>
+                  {isMapped && (
+                    <span className="campus-nav-mapper-coords">
+                      ({coords.x.toFixed(1)}, {coords.y.toFixed(1)})
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          <button className="campus-nav-mapper-copy-btn" onClick={copyMapperJSON}>
+            📋 Copy All Coordinates as JSON
+          </button>
+        </div>
+      )}
     </div>
   );
 }

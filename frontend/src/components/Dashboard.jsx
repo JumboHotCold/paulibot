@@ -90,12 +90,16 @@ export default function Dashboard({ user, onLogout, onNavigateLogin, messages, i
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [activeModule, setActiveModule] = useState('chat'); // 'chat' | 'tour' | 'map'
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [navigationDestination, setNavigationDestination] = useState(null);
 
   useEffect(() => {
     // Check if the latest message triggers an active module change
     if (messages.length > 0) {
       const lastMessage = messages[messages.length - 1];
-      if (lastMessage.action === 'show_map') {
+      if (lastMessage.action === 'navigate_map') {
+        setActiveModule('map');
+        setNavigationDestination(lastMessage.action_data?.destination || null);
+      } else if (lastMessage.action === 'show_map') {
         setActiveModule('map');
       } else if (lastMessage.action === 'load_tour') {
         setActiveModule('tour');
@@ -229,14 +233,14 @@ export default function Dashboard({ user, onLogout, onNavigateLogin, messages, i
         {activeModule !== 'chat' && (
           <div className="module-panel">
              <button 
-                onClick={() => setActiveModule('chat')} 
+                onClick={() => { setActiveModule('chat'); setNavigationDestination(null); }} 
                 className="module-close-btn"
              >
                ✕ Close {activeModule === 'tour' ? 'Tour' : 'Map'}
              </button>
              
              {activeModule === 'tour' && <VirtualTour className="w-full h-full shadow-2xl" />}
-             {activeModule === 'map' && <MapModule className="w-full h-full shadow-2xl" />}
+             {activeModule === 'map' && <MapModule className="w-full h-full shadow-2xl" destination={navigationDestination} />}
           </div>
         )}
 

@@ -81,29 +81,105 @@ class PauliBotLogic:
             
         return context, sources
 
+    # ── Location keyword → campus node ID mapping ──
+    LOCATION_KEYWORDS = {
+        'registrar': 'registrar_office',
+        'registration': 'registrar_office',
+        'finance': 'finance_office',
+        'cashier': 'finance_office',
+        'accounting': 'finance_office',
+        'guidance': 'guidance_office',
+        'counselor': 'guidance_office',
+        'cafeteria': 'cafeteria',
+        'canteen': 'cafeteria',
+        'cathedral': 'cathedral',
+        'church': 'cathedral',
+        'chapel': 'cathedral',
+        'clinic': 'clinic',
+        'infirmary': 'clinic',
+        'nurse': 'clinic',
+        'sao': 'sao',
+        'student affairs': 'sao',
+        'ict': 'ict_office',
+        'music room': 'music_room',
+        'president': 'presidents_office',
+        'boardroom': 'presidents_boardroom',
+        'hr': 'hr_office',
+        'human resource': 'hr_office',
+        'science building': 'science_building',
+        'science lab': 'science_building',
+        'laboratory': 'science_building',
+        'court': 'open_court',
+        'basketball': 'open_court',
+        'lounge': 'student_lounge_upper',
+        'cfo': 'cfo',
+        'front office': 'cfo',
+        'ccje': 'ccje',
+        'criminal justice': 'ccje',
+        'criminology': 'ccje',
+        'engineering': 'ceit',
+        'information technology': 'ceit',
+        'ceit': 'ceit',
+        'community development': 'community_dev',
+        'community': 'community_dev',
+        'dean': 'dean_graduate',
+        'graduate school': 'dean_graduate',
+        'entrance': 'main_entrance',
+        'gate': 'main_entrance',
+        'main gate': 'main_entrance',
+        'visitor': 'visitors_lodge',
+        'lodge': 'visitors_lodge',
+        'snb': 'snb_building',
+        'inspire': 'inspire',
+        'ins pire': 'inspire',
+        'scholarship': 'inspire',
+        'education': 'college_education',
+        'college of education': 'college_education',
+        'san nicolas': 'san_nicolas_bldg',
+        'restroom': 'restroom_left',
+        'sp building': 'sp_building',
+        'st paul building': 'sp_building',
+    }
+
+    def _extract_destination(self, message):
+        """Extract destination node ID from a user's location query."""
+        msg_lower = message.lower()
+        # Try longest keyword first for better matching
+        sorted_keywords = sorted(self.LOCATION_KEYWORDS.keys(), key=len, reverse=True)
+        for keyword in sorted_keywords:
+            if keyword in msg_lower:
+                return self.LOCATION_KEYWORDS[keyword]
+        return None
+
     def process_query(self, user_message):
         """
         Takes the user message, retrieves RAG context, and generates a response via Groq.
-        Returns a tuple of (response_text, sources_list).
+        Returns a tuple of (response_text, sources_list, action, action_data).
         """
         if not self.client:
             return (
                 "System Configuration Error: The AI brain is currently offline because "
                 "the `GROQ_API_KEY` is missing in the `.env` file. "
                 "Please configure it to enable intelligent responses."
-            ), [], None
+            ), [], None, None
             
         msg = user_message.strip()
         if not msg:
-            return "Please type a message.", [], None
+            return "Please type a message.", [], None, None
         
         # Procedural check
         procedural_keywords = ['enroll', 'enrollment', 'how do i', 'how to', 'steps to', 'process for', 'requirements for', 'apply', 'deadline', 'loa', 'leave of absence', 'scholarship', 'add/drop']
         is_procedural = any(kw in msg.lower() for kw in procedural_keywords)
 
-        # Mapping Intention check
-        mapping_keywords = ['where is', 'where are', 'location of', 'find', 'map of', 'how to get to', 'directions to']
-        action = 'show_map' if any(kw in msg.lower() for kw in mapping_keywords) else None
+        # Mapping / Navigation Intention check
+        mapping_keywords = ['where is', 'where are', 'location of', 'find', 'map of', 'how to get to', 'directions to', 'navigate to', 'way to', 'nasaan', 'saan ang']
+        action = None
+        action_data = None
+
+        if any(kw in msg.lower() for kw in mapping_keywords):
+            action = 'navigate_map'
+            destination = self._extract_destination(msg)
+            action_data = {'destination': destination}
 
         # Step 1: Retrieve context from the knowledge base (RAG)
         context, sources = self._build_context(msg)
@@ -137,7 +213,7 @@ class PauliBotLogic:
             
             response_text = chat_completion.choices[0].message.content.strip()
             logger.info(f"Groq response generated successfully for query: '{msg[:50]}...'")
-            return response_text, sources, action
+            return response_text, sources, action, action_data
             
         except Exception as e:
             error_msg = str(e)
@@ -148,9 +224,9 @@ class PauliBotLogic:
                     "I'm receiving a lot of questions right now! 😅 "
                     "Please wait a moment and try again. "
                     "Maraming nagtatanong ngayon, subukan ulit mamaya!"
-                ), [], None
+                ), [], None, None
             
             return (
                 "I apologize, but I am currently experiencing technical difficulties "
                 f"connecting to my intelligence network. ({error_msg})"
-            ), [], None
+            ), [], None, None

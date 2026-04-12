@@ -217,7 +217,7 @@ def chat_api(request):
             return Response({'response': "Please type a message."}, status=400)
 
         # Process query with Logic Engine
-        bot_response, sources, action = bot.process_query(user_message)
+        bot_response, sources, action, action_data = bot.process_query(user_message)
         
         # HYBRID ACCESS: SAVE Logic
         if request.user.is_authenticated:
@@ -273,7 +273,8 @@ def chat_api(request):
             'conversation_id': active_conversation_id,
             'conversation_title': conversation_title,
             'chat_history_id': chat_history_id,
-            'action': action
+            'action': action,
+            'action_data': action_data
         })
         
     except Exception as e:
