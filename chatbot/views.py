@@ -568,3 +568,57 @@ def update_profile(request):
         'nickname': user.nickname or user.username,
         'avatar_url': user.avatar.url if user.avatar else None
     })
+
+# ==============================================================================
+# SMART CAMPUS NAVIGATION APIS
+# ==============================================================================
+from .campus_nav import get_pathfinder
+
+@api_view(['POST'])
+def calculate_campus_route(request):
+    """
+    Receives start and end coordinates in percentages (0-100) from React,
+    converts to absolute pixels, calculates the path via A* Engine, 
+    and returns a path array in percentages.
+    """
+    try:
+        data = request.data
+        start_x_pct = float(data.get('start_x'))
+        start_y_pct = float(data.get('start_y'))
+        end_x_pct = float(data.get('end_x'))
+        end_y_pct = float(data.get('end_y'))
+        
+        pathfinder = get_pathfinder()
+        
+        orig_w, orig_h = pathfinder.orig_size
+        
+        # Convert % to absolute pixels on the original 4500x2800 image
+        start_x = int((start_x_pct / 100.0) * orig_w)
+        start_y = int((start_y_pct / 100.0) * orig_h)
+        end_x = int((end_x_pct / 100.0) * orig_w)
+        end_y = int((end_y_pct / 100.0) * orig_h)
+        
+        # Run Pathfinding
+        route_pixels = pathfinder.calculate_path(start_x, start_y, end_x, end_y)
+        
+        if not route_pixels:
+            return Response({'error': 'Path blocked or not found'}, status=404)
+            
+        # Convert pixels back to %
+        route_pct = [
+            {'x': (px / orig_w) * 100.0, 'y': (py / orig_h) * 100.0}
+            for (px, py) in route_pixels
+        ]
+        
+        # We can also calculate distance. (e.g. number of pixels walked * scale factor)
+        # Just passing back the raw array length as a placeholder for distance
+        distance_estimate = len(route_pixels) * pathfinder.scale
+        
+        return Response({
+            'status': 'success',
+            'path': route_pct,
+            'distance_pixels': distance_estimate
+        })
+        
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { CAMPUS_NODES, CAMPUS_EDGES, resolveLocationFromText } from '../data/campusGraph';
-import { findShortestPath, estimateWalkingTime } from '../utils/dijkstra';
+import { CAMPUS_NODES, resolveLocationFromText } from '../data/campusGraph';
+import { fetchCampusRoute } from '../api/chatApi';
 
 // =============================================================================
 // NODE TYPE ICONS
@@ -63,16 +63,35 @@ export default function MapModule({ className = "", destination = null }) {
 
   // ── Calculate path when origin & destination are both set ──
   useEffect(() => {
-    if (origin && selectedDestination && origin !== selectedDestination) {
-      const result = findShortestPath(origin, selectedDestination);
-      setPathResult(result);
-      if (result) {
-        setShowDirections(true);
-        setShowOriginPicker(false);
+    async function getRoute() {
+      if (origin && selectedDestination && origin !== selectedDestination) {
+        try {
+          const start = CAMPUS_NODES[origin];
+          const end = CAMPUS_NODES[selectedDestination];
+          
+          if (!start || !end) return;
+          
+          const result = await fetchCampusRoute(start.x, start.y, end.x, end.y);
+          
+          if (result.status === 'success') {
+            setPathResult(result);
+            setShowDirections(true);
+            setShowOriginPicker(false);
+          } else {
+            console.error(result.error);
+            setPathResult(null);
+            alert("No path found between these locations.");
+          }
+        } catch (error) {
+          console.error("Failed to fetch route:", error);
+          setPathResult(null);
+        }
+      } else {
+        setPathResult(null);
       }
-    } else {
-      setPathResult(null);
     }
+    
+    getRoute();
   }, [origin, selectedDestination]);
 
   // ── Image click handler ──
@@ -162,11 +181,9 @@ export default function MapModule({ className = "", destination = null }) {
   // ── Get path polyline points ──
   const getPathPoints = () => {
     if (!pathResult || !pathResult.path) return '';
+    // The backend now returns an array of {x: percentage, y: percentage}
     return pathResult.path
-      .map(nodeId => {
-        const coords = getNodeCoords(nodeId);
-        return `${coords.x},${coords.y}`;
-      })
+      .map(coords => `${coords.x},${coords.y}`)
       .join(' ');
   };
 
@@ -245,8 +262,9 @@ export default function MapModule({ className = "", destination = null }) {
 
               const isOrigin = origin === node.id;
               const isDest = selectedDestination === node.id;
-              const isOnPath = pathResult?.path?.includes(node.id);
               const isHovered = hoveredNode === node.id;
+              
+              // We no longer highlight waypoints array for dots as the path draws over them
 
               let fillColor = '#9ca3af';
               let radius = 0.6;
@@ -261,9 +279,6 @@ export default function MapModule({ className = "", destination = null }) {
                 fillColor = '#ef4444';
                 radius = 1;
                 strokeWidth = 0.25;
-              } else if (isOnPath) {
-                fillColor = '#d4af37';
-                radius = 0.8;
               } else if (isHovered) {
                 fillColor = TYPE_COLORS[node.type] || '#6b7280';
                 radius = 0.8;
@@ -314,29 +329,7 @@ export default function MapModule({ className = "", destination = null }) {
             })}
 
             {/* Waypoint numbers on path (only for real locations, not corridor bends) */}
-            {pathResult && (() => {
-              let visibleIdx = 0;
-              return pathResult.path.map((nodeId) => {
-                if (isWaypoint(nodeId)) return null;
-                const coords = getNodeCoords(nodeId);
-                if (coords.x === 0 && coords.y === 0) return null;
-                visibleIdx++;
-                return (
-                  <text
-                    key={`wp-${nodeId}`}
-                    x={coords.x}
-                    y={coords.y - 1.5}
-                    textAnchor="middle"
-                    className="campus-nav-waypoint-num"
-                    fontSize="0.9"
-                    fill="#006B3F"
-                    fontWeight="bold"
-                  >
-                    {visibleIdx}
-                  </text>
-                );
-              });
-            })()}
+            {/* The python backend does not currently output turn-by-turn text nodes. */}
           </svg>
 
           {/* ── Hover tooltip (not for waypoints) ── */}
@@ -449,7 +442,7 @@ export default function MapModule({ className = "", destination = null }) {
             <div className="campus-nav-directions-summary">
               <span>📍 {CAMPUS_NODES[origin]?.name} → {CAMPUS_NODES[selectedDestination]?.name}</span>
               <span className="campus-nav-directions-time">
-                ~{estimateWalkingTime(pathResult.distance)} min walk
+                ~{Math.ceil((pathResult.distance_pixels * 0.05) / 60)} min walk
               </span>
             </div>
             <span className="campus-nav-directions-chevron">{showDirections ? '▼' : '▲'}</span>
@@ -457,21 +450,10 @@ export default function MapModule({ className = "", destination = null }) {
           
           {showDirections && (
             <div className="campus-nav-directions-steps">
-              {/* Filter out steps that reference corridor waypoints */}
-              {pathResult.steps
-                .filter(step => !step.nodeId || !isWaypoint(step.nodeId))
-                .map((step, idx, arr) => (
-                <div
-                  key={idx}
-                  className={`campus-nav-step ${idx === 0 ? 'start' : ''} ${idx === arr.length - 1 ? 'end' : ''}`}
-                >
-                  <span className="campus-nav-step-icon">{step.icon}</span>
-                  <span className="campus-nav-step-text">{step.instruction}</span>
-                  {idx < arr.length - 1 && (
-                    <div className="campus-nav-step-connector" />
-                  )}
-                </div>
-              ))}
+              <div className="campus-nav-step start end">
+                <span className="campus-nav-step-icon">🚶</span>
+                <span className="campus-nav-step-text">Follow the highlighted path on the map.</span>
+              </div>
               
               <button className="campus-nav-reset-btn" onClick={resetNavigation}>
                 🔄 Change Starting Point

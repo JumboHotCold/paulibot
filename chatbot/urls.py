@@ -36,4 +36,7 @@ urlpatterns = [
     # Public API
     path('api/announcements', views.get_announcements, name='get_announcements'),
     path('api/profile', views.update_profile, name='api_profile'),
+    
+    # Campus Navigation API
+    path('api/navigation/route/', views.calculate_campus_route, name='calculate_campus_route'),
 ]

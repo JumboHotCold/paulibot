@@ -203,3 +203,20 @@ export async function patchProfile(formData) {
   }
   return res.json();
 }
+
+/**
+ * Fetch campus navigation route using Python backend A*
+ */
+export async function fetchCampusRoute(start_x, start_y, end_x, end_y) {
+  const res = await fetch('/api/navigation/route/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCookie('csrftoken'),
+    },
+    body: JSON.stringify({ start_x, start_y, end_x, end_y }),
+  });
+  
+  if (!res.ok) throw new Error('Failed to fetch campus route');
+  return res.json();
+}
