@@ -26,12 +26,13 @@ LANGUAGE GUIDELINES:
 - If the message mixes Filipino and English (Taglish), respond in Taglish.
 - Always keep a warm, friendly, and approachable tone — like a helpful campus guide.
 
-GREETING & CASUAL CHAT:
-- For greetings (hi, hello, kamusta, hey, good morning, magandang umaga), respond with a friendly greeting in the SAME language and introduce yourself as PauliBot. Offer to help with SPUS-related questions. Do NOT say you lack information — greetings are not knowledge-base queries.
-- For casual questions (how are you?, kamusta ka?, what's up?), respond warmly and naturally (e.g., "I'm doing great, ready to help you!" or "Mabuti naman! Ano ang maitutulong ko?").
+GREETING & IDENTITY:
+- Introduce yourself as PauliBot ONLY in the very first message of a conversation or when explicitly asked "Who are you?".
+- For regular follow-up questions, jump straight to the answer without restating your name or giving a generic welcome.
+- For greetings (hi, hello, kamusta, hey, good morning), respond with a friendly greeting in the SAME language. If it's the start of the chat, introduce yourself. If it's midway, just greet back naturally.
 
 ANSWER STYLE:
-- Be thorough but concise.
+- Be thorough but concise. Avoid redundant preambles.
 - Maintain a professional and academic tone.
 - Use bullet points or numbered lists when listing multiple items.
 
@@ -40,6 +41,7 @@ After EVERY answer, provide exactly 3 short follow-up questions the student migh
 Write them on the LAST line in this EXACT format:
 [SUGGESTIONS: "Question 1?" | "Question 2?" | "Question 3?"]
 The suggestions must be in the SAME language as your response and relevant to SPUS topics."""
+
 
 
 class PauliBotLogic:
@@ -65,7 +67,7 @@ class PauliBotLogic:
 
     def _build_context(self, query):
         """Perform semantic search to fetch relevant context chunks and return context string + sources list."""
-        results = self.rag.search(query, limit=5)
+        results = self.rag.search(query, limit=8)
         if not results:
             return "No relevant knowledge base entries found for this query.", []
         
@@ -151,10 +153,13 @@ class PauliBotLogic:
                 return self.LOCATION_KEYWORDS[keyword]
         return None
 
-    def process_query(self, user_message):
+    def process_query(self, user_message, history=None):
         """
         Takes the user message, retrieves RAG context, and generates a response via Groq.
         Returns a tuple of (response_text, sources_list, action, action_data).
+        
+        :param user_message: The current user query string.
+        :param history: Optional list of previous messages in OpenAI/Groq format.
         """
         if not self.client:
             return (
@@ -198,18 +203,24 @@ class PauliBotLogic:
             system_prompt += "\n\nPROCEDURAL OVERRIDE: The user is asking a procedural question. You are an academic advisor. Answer using ONLY the provided handbook excerpts/knowledge base. Format procedural answers strictly as a numbered Markdown list. Ensure it is easy to read."
         
         # Step 3: Call Groq API with structured system + user messages
+        # Combine system prompt, history, and current user content
+        messages = [{"role": "system", "content": system_prompt}]
+        
+        if history:
+            messages.extend(history)
+            
+        messages.append({"role": "user", "content": user_content})
+
         try:
             chat_completion = self.client.chat.completions.create(
                 model=self.model_name,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_content},
-                ],
+                messages=messages,
                 temperature=0.6,
                 max_tokens=1024,
                 top_p=0.9,
                 stream=False,
             )
+
             
             response_text = chat_completion.choices[0].message.content.strip()
             logger.info(f"Groq response generated successfully for query: '{msg[:50]}...'")

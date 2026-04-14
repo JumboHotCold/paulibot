@@ -10,6 +10,8 @@ from django.http import JsonResponse
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie
+import re
+
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -217,7 +219,22 @@ def chat_api(request):
             return Response({'response': "Please type a message."}, status=400)
 
         # Process query with Logic Engine
-        bot_response, sources, action, action_data = bot.process_query(user_message)
+        history_msgs = []
+        if conversation_id and request.user.is_authenticated:
+            # Fetch last 5 interactions (10 messages total) for context to stay within token limits
+            past_chats = ChatHistory.objects.filter(
+                conversation_id=conversation_id, 
+                user=request.user
+            ).order_by('-timestamp')[:5]
+            
+            # Reverse to get chronological order [ oldest -> newest ]
+            for chat in reversed(past_chats):
+                history_msgs.append({"role": "user", "content": chat.message})
+                # Strip suggestions from bot response for cleaner history context
+                clean_response = re.sub(r'\[SUGGESTIONS:.*?\]', '', chat.response).strip()
+                history_msgs.append({"role": "assistant", "content": clean_response})
+
+        bot_response, sources, action, action_data = bot.process_query(user_message, history=history_msgs)
         
         # HYBRID ACCESS: SAVE Logic
         if request.user.is_authenticated:
@@ -321,7 +338,8 @@ from rest_framework.permissions import IsAdminUser
 from django.db.models import Count
 from django.db.models.functions import ExtractHour, ExtractWeekDay
 from django.core.paginator import Paginator
-import re
+import json
+
 
 
 @api_view(['GET'])

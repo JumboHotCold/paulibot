@@ -1368,32 +1368,29 @@ body {
         display: flex;
     }
 
-    /* --- Module Panel: Stack vertically --- */
+    /* --- Module Panel: Full Screen --- */
     .main-area-wrapper.has-module {
         flex-direction: column;
     }
     .module-panel {
-        flex: none;
-        height: 50vh;
-        min-height: 280px;
-        max-height: 55vh;
+        flex: 1;
+        height: 100%;
+        min-height: unset;
+        max-height: none;
         border-right: none;
-        border-bottom: 1px solid var(--border-color);
-        padding: 8px;
+        border-bottom: none;
+        padding: 0;
     }
     .module-close-btn {
-        top: 12px;
-        right: 12px;
-        padding: 6px 12px;
-        font-size: 0.8em;
+        top: 16px;
+        right: 16px;
+        padding: 8px 14px;
+        font-size: 0.85em;
     }
 
-    /* Chat shrinks to fill remaining space */
+    /* Hide chat completely when module is active on mobile */
     .chat-with-module {
-        min-width: unset;
-        border-left: none;
-        box-shadow: none;
-        flex: 1;
+        display: none;
     }
 
     /* --- Chat Header --- */
@@ -2083,3 +2080,101 @@ html[data-theme='dark'] .campus-nav-step-connector {
     }
 }
 
+/* =========================================
+   3D SMART VIRTUAL TOUR NAV MARKERS
+   ========================================= */
+
+.vt-nav-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    /* We don't apply 3D transform to container to let the label stay 2D facing camera */
+    position: relative;
+    z-index: 10;
+    transition: transform 0.2s ease;
+}
+
+.vt-nav-container:hover {
+    transform: scale(1.05);
+}
+
+.vt-nav-arrow {
+    width: 60px;
+    height: 60px;
+    background-color: rgba(255, 255, 255, 0.2);
+    border: 3px solid rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* The 3D effect laying flat on the floor */
+    transform: perspective(600px) rotateX(75deg) translateZ(0);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    animation: floatArrow 2.5s infinite ease-in-out;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    margin-top: 8px; /* Space between label and arrow */
+}
+
+/* Inner chevron */
+.vt-nav-arrow::after {
+    content: '';
+    display: block;
+    width: 20px;
+    height: 20px;
+    border-top: 4px solid white;
+    border-right: 4px solid white;
+    /* Point into the screen (forward) */
+    transform: rotate(-45deg) translate(-2px, 2px);
+    box-shadow: 2px -2px 0 rgba(0,0,0,0.2); /* Depth impression */
+    transition: all 0.3s ease;
+}
+
+.vt-nav-container:hover .vt-nav-arrow {
+    background-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 30px rgba(255, 255, 255, 0.9);
+    border-color: var(--spus-gold, #D4AF37);
+}
+
+.vt-nav-container:hover .vt-nav-arrow::after {
+    border-color: var(--spus-gold, #D4AF37);
+    transform: rotate(-45deg) translate(2px, -2px); /* Shift forward upon hover */
+}
+
+.vt-nav-label {
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-shadow: 0 1px 3px rgba(0,0,0,1);
+    opacity: 0.9;
+    transition: all 0.3s ease;
+    pointer-events: none; /* Let container handle clicks */
+    border: 1px solid rgba(255,255,255,0.3);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.vt-nav-container:hover .vt-nav-label {
+    opacity: 1;
+    background: var(--spus-green, #0A4D2E);
+    border-color: var(--spus-gold, #D4AF37);
+    color: white;
+    box-shadow: 0 6px 15px rgba(10, 77, 46, 0.6);
+    transform: translateY(-3px);
+}
+
+@keyframes floatArrow {
+    0%, 100% {
+        transform: perspective(600px) rotateX(75deg) translateZ(0);
+        box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+    }
+    50% {
+        transform: perspective(600px) rotateX(75deg) translateZ(12px);
+        box-shadow: 0 0 25px rgba(255, 255, 255, 0.6);
+    }
+}

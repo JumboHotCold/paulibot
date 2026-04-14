@@ -69,11 +69,12 @@ class RAGSearcher:
 
         query_vector = self._generate_embedding(query)
         all_results = []
+        pool_size = max(15, limit * 3)
 
         # Search Locations
         locations = Location.objects.exclude(embedding__isnull=True).annotate(
             distance=L2Distance('embedding', query_vector)
-        ).order_by('distance')[:limit]
+        ).order_by('distance')[:pool_size]
         
         for loc in locations:
             all_results.append({
@@ -86,7 +87,7 @@ class RAGSearcher:
         # Search Staff
         staff_members = StaffMember.objects.exclude(embedding__isnull=True).annotate(
             distance=L2Distance('embedding', query_vector)
-        ).order_by('distance')[:limit]
+        ).order_by('distance')[:pool_size]
         
         for staff in staff_members:
             all_results.append({
@@ -99,7 +100,7 @@ class RAGSearcher:
         # Search FAQs
         faqs = FAQ.objects.exclude(embedding__isnull=True).annotate(
             distance=L2Distance('embedding', query_vector)
-        ).order_by('distance')[:limit]
+        ).order_by('distance')[:pool_size]
         
         for faq in faqs:
             all_results.append({
@@ -108,6 +109,20 @@ class RAGSearcher:
                 'url': None,
                 'distance': faq.distance
             })
+
+        # --- Keyword Boost Logic ---
+        query_lower = query.lower()
+        boost_keywords = []
+        if 'tesda' in query_lower:
+            boost_keywords.append('tesda')
+        if 'tvet' in query_lower:
+            boost_keywords.append('tvet')
+            
+        for res in all_results:
+            text_lower = res['text'].lower()
+            for kw in boost_keywords:
+                if kw in text_lower:
+                    res['distance'] -= 0.5  # Artificial boost
 
         # Sort all results by distance and pick the top `limit`
         all_results.sort(key=lambda x: x['distance'])

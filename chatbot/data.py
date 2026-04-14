@@ -96,9 +96,9 @@ FAQS = [
         "answer": "Choosing SPUS means embracing:\n- Faith-Based Education: Integrating Catholic Christian values forming ethically grounded leaders.\n- Academic Excellence: An Outcomes-Based Education (OBE) framework ensuring rigorous, industry-relevant skills.\n- Vibrant Campus Life: Diverse student organizations and dynamic campus events.\n- Global Alumni Network: A vast and interconnected network offering mentorship and lifelong support."
     },
     {
-        "category": "TVET",
-        "question": "What TVET programs are offered?",
-        "answer": "SPUS TVET offers Registered Training Center Programs (Diplomas in Health Services, IT, and Hotel & Restaurant Technology; NC II in Computer Systems Servicing, Food & Bev Services, Housekeeping) and Accredited Assessment Center Programs (NC II in Bookkeeping, Computer Systems Servicing, Food & Bev, Housekeeping, Massage Therapy, Hilot Wellness). For inquiries, email tvet@spus.edu.ph or contact Mrs. Chrizely M. Dalagan at 09635606094 / Mrs. Margeorhey B. Mordeno at 09129896596."
+        "category": "TVET / TESDA",
+        "question": "What TVET or TESDA programs are offered?",
+        "answer": "As a fully TESDA-registered training center, SPUS TVET offers Registered Training Center Programs (Diplomas in Health Services, IT, and Hotel & Restaurant Technology; NC II in Computer Systems Servicing, Food & Bev Services, Housekeeping) and Accredited Assessment Center Programs (NC II in Bookkeeping, Computer Systems Servicing, Food & Bev, Housekeeping, Massage Therapy, Hilot Wellness). For inquiries, email tvet@spus.edu.ph or contact Mrs. Chrizely M. Dalagan at 09635606094 / Mrs. Margeorhey B. Mordeno at 09129896596."
     },
     {
         "category": "About SPUS",

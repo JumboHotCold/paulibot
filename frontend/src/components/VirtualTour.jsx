@@ -1,48 +1,81 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ReactPhotoSphereViewer } from 'react-photo-sphere-viewer';
 import { MarkersPlugin } from '@photo-sphere-viewer/markers-plugin';
 import '@photo-sphere-viewer/core/index.css';
 import '@photo-sphere-viewer/markers-plugin/index.css';
 
-// Define the nodes and their connections
+/**
+ * NODES — Virtual Tour locations with 360° panoramas.
+ *
+ * yaw angles are calibrated from the equirectangular image center (0°):
+ *   - Image center = yaw 0° (default forward view when panorama loads)
+ *   - Positive yaw = clockwise (right)
+ *   - Negative yaw = counter-clockwise (left)
+ *   - ±180° = directly behind
+ */
 const NODES = {
   'cafeteria': {
     id: 'cafeteria',
     name: 'Cafeteria Hallway',
     description: 'The main campus dining hall hallway.',
-    top: '26.00%', 
-    left: '78.35%',
+    top: '27.84%',
+    left: '79.26%',
     panorama: '/images/SmartVirtualTour/cafeteria_hallway_1.jpg',
     markers: [
       {
         id: 'to_church',
-        longitude: '180deg',
-        latitude: '0deg',
-        html: '<div style="background: rgba(212,175,55,0.9); padding: 8px 12px; border-radius: 8px; color: white; cursor: pointer; font-weight: bold; border: 2px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">Go to Church Hallway ➔</div>',
+        position: { yaw: '317.2deg', pitch: '-4.7deg' },
+        html: '<div class="vt-nav-container"><div class="vt-nav-label">Administrative Hallway</div><div class="vt-nav-arrow" title="Walk to Administrative Hallway"></div></div>',
         anchor: 'center center',
-        tooltip: 'Walk to Church',
+        tooltip: 'Walk to Administrative Hallway',
         style: { cursor: 'pointer' },
         data: { targetNode: 'church' }
+      },
+      {
+        id: 'to_main_entrance',
+        position: { yaw: '210deg', pitch: '-15deg' },
+        html: '<div class="vt-nav-container"><div class="vt-nav-label">Main Entrance</div><div class="vt-nav-arrow" title="Walk to Main Entrance"></div></div>',
+        anchor: 'center center',
+        tooltip: 'Walk to Main Entrance',
+        style: { cursor: 'pointer' },
+        data: { targetNode: 'main_entrance' }
+      },
+      {
+        id: 'to_court',
+        position: { yaw: '310.5deg', pitch: '-10.5deg' },
+        html: '<div class="vt-nav-container"><div class="vt-nav-label">Campus Court</div><div class="vt-nav-arrow" title="Walk to Campus Court"></div></div>',
+        anchor: 'center center',
+        tooltip: 'Walk to Campus Court',
+        style: { cursor: 'pointer' },
+        data: { targetNode: 'court' }
       }
     ]
   },
   'church': {
     id: 'church',
-    name: 'Church Hallway',
-    description: 'The exterior hallway next to the chapel.',
-    top: '33.53%',
-    left: '52.29%',
+    name: 'Administrative Hallway',
+    description: 'The corridor connecting the court and administrative offices.',
+    top: '34.29%',
+    left: '52.13%',
     panorama: '/images/SmartVirtualTour/church_x_hallway__1.jpg',
     markers: [
       {
         id: 'to_cafeteria',
-        longitude: '0deg',
-        latitude: '0deg',
-        html: '<div style="background: rgba(212,175,55,0.9); padding: 8px 12px; border-radius: 8px; color: white; cursor: pointer; font-weight: bold; border: 2px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">Go to Cafeteria Hallway ➔</div>',
+        position: { yaw: '104.5deg', pitch: '-17.9deg' },
+        html: '<div class="vt-nav-container"><div class="vt-nav-label">Cafeteria Hallway</div><div class="vt-nav-arrow" title="Walk to Cafeteria Hallway"></div></div>',
         anchor: 'center center',
-        tooltip: 'Walk to Cafeteria',
+        tooltip: 'Walk to Cafeteria Hallway',
         style: { cursor: 'pointer' },
         data: { targetNode: 'cafeteria' }
+      },
+      {
+        id: 'to_court',
+        position: { yaw: '85.9deg', pitch: '-17.2deg' },
+        html: '<div class="vt-nav-container"><div class="vt-nav-label">Campus Court</div><div class="vt-nav-arrow" title="Walk to Campus Court"></div></div>',
+        anchor: 'center center',
+        tooltip: 'Walk to Campus Court',
+        style: { cursor: 'pointer' },
+        data: { targetNode: 'court' }
       }
     ]
   },
@@ -53,16 +86,82 @@ const NODES = {
     top: '47.63%',
     left: '84.11%',
     panorama: '/images/SmartVirtualTour/Main_Entrance.jpg',
-    markers: []
+    markers: [
+      {
+        id: 'to_main_entrance_lobby',
+        position: { yaw: '70deg', pitch: '-15deg' },
+        html: '<div class="vt-nav-container"><div class="vt-nav-label">Main Entrance Lobby</div><div class="vt-nav-arrow" title="Walk to Main Entrance Lobby"></div></div>',
+        anchor: 'center center',
+        tooltip: 'Walk to Main Entrance Lobby',
+        style: { cursor: 'pointer' },
+        data: { targetNode: 'main_entrance_lobby' }
+      },
+      {
+        id: 'to_cafeteria',
+        position: { yaw: '240deg', pitch: '-15deg' },
+        html: '<div class="vt-nav-container"><div class="vt-nav-label">Cafeteria Hallway</div><div class="vt-nav-arrow" title="Walk to Cafeteria Hallway"></div></div>',
+        anchor: 'center center',
+        tooltip: 'Walk to Cafeteria Hallway',
+        style: { cursor: 'pointer' },
+        data: { targetNode: 'cafeteria' }
+      }
+    ]
+  },
+  'main_entrance_lobby': {
+    id: 'main_entrance_lobby',
+    name: 'Main Entrance Lobby',
+    description: 'The lobby area near the main entrance of the campus.',
+    top: '41.70%',
+    left: '83.63%',
+    panorama: '/images/SmartVirtualTour/Main_Entrance_Lobby.jpg',
+    markers: [
+      {
+        id: 'to_main_entrance',
+        position: { yaw: '-70deg', pitch: '-15deg' },
+        html: '<div class="vt-nav-container"><div class="vt-nav-label">Main Entrance</div><div class="vt-nav-arrow" title="Walk to Main Entrance"></div></div>',
+        anchor: 'center center',
+        tooltip: 'Walk to Main Entrance',
+        style: { cursor: 'pointer' },
+        data: { targetNode: 'main_entrance' }
+      },
+      {
+        id: 'to_cafeteria',
+        position: { yaw: '103.9deg', pitch: '-16.3deg' },
+        html: '<div class="vt-nav-container"><div class="vt-nav-label">Cafeteria Hallway</div><div class="vt-nav-arrow" title="Walk to Cafeteria Hallway"></div></div>',
+        anchor: 'center center',
+        tooltip: 'Walk to Cafeteria Hallway',
+        style: { cursor: 'pointer' },
+        data: { targetNode: 'cafeteria' }
+      }
+    ]
   },
   'court': {
     id: 'court',
     name: 'Campus Court',
     description: 'The main sports and activity court.',
-    top: '28.44%',
-    left: '63.50%',
+    top: '27.84%',
+    left: '63.76%',
     panorama: '/images/SmartVirtualTour/COURT.jpg',
-    markers: []
+    markers: [
+      {
+        id: 'to_church',
+        position: { yaw: '319.3deg', pitch: '-3.1deg' },
+        html: '<div class="vt-nav-container"><div class="vt-nav-label">Administrative Hallway</div><div class="vt-nav-arrow" title="Walk to Administrative Hallway"></div></div>',
+        anchor: 'center center',
+        tooltip: 'Walk to Administrative Hallway',
+        style: { cursor: 'pointer' },
+        data: { targetNode: 'church' }
+      },
+      {
+        id: 'to_cafeteria',
+        position: { yaw: '117.3deg', pitch: '-7.6deg' },
+        html: '<div class="vt-nav-container"><div class="vt-nav-label">Cafeteria Hallway</div><div class="vt-nav-arrow" title="Walk to Cafeteria Hallway"></div></div>',
+        anchor: 'center center',
+        tooltip: 'Walk to Cafeteria Hallway',
+        style: { cursor: 'pointer' },
+        data: { targetNode: 'cafeteria' }
+      }
+    ]
   }
 };
 
@@ -71,43 +170,36 @@ export default function VirtualTour({ className = "" }) {
   const [currentNodeId, setCurrentNodeId] = useState(null);
   const [hoveredNode, setHoveredNode] = useState(null);
   const [tappedNode, setTappedNode] = useState(null);
-  const psvRef = useRef(null);
 
   // Update viewer when the node changes
   const currentNode = NODES[currentNodeId] || NODES['cafeteria'];
 
-  // Handle marker clicks to traverse nodes
+  // Handle marker clicks to traverse nodes (PSV v5 API)
   const handleReady = (instance) => {
-    psvRef.current = instance;
     const markersPlugin = instance.getPlugin(MarkersPlugin);
-    
+
     if (markersPlugin) {
       markersPlugin.addEventListener('select-marker', ({ marker }) => {
-        if (marker.config.data && marker.config.data.targetNode) {
-          const nextNode = marker.config.data.targetNode;
-          setCurrentNodeId(nextNode);
+        // PSV v5: try both data paths for compatibility
+        const targetNode = marker?.data?.targetNode || marker?.config?.data?.targetNode;
+        if (targetNode) {
+          setCurrentNodeId(targetNode);
         }
       });
     }
-  };
 
-  // When node changes, we want the viewer to update its panorama and markers.
-  // We can do this programmatically or just let React re-mount/update the component.
-  // Using useEffect to update an existing instance is often smoother.
-  useEffect(() => {
-    if (psvRef.current) {
-      const markersPlugin = psvRef.current.getPlugin(MarkersPlugin);
-      
-      // Update panorama
-      psvRef.current.setPanorama(currentNode.panorama).then(() => {
-        // Clear and add new markers
-        if (markersPlugin) {
-          markersPlugin.clearMarkers();
-          currentNode.markers.forEach(m => markersPlugin.addMarker(m));
-        }
-      });
-    }
-  }, [currentNodeId]);
+    // --- YAW CALIBRATION HELPER ---
+    // Click anywhere in the 360 view to log the exact yaw/pitch in the console.
+    // Use this to fine-tune arrow positions if needed.
+    instance.addEventListener('click', ({ data }) => {
+      const yawDeg = (data.yaw * 180 / Math.PI).toFixed(1);
+      const pitchDeg = (data.pitch * 180 / Math.PI).toFixed(1);
+      console.log(
+        `%c[VT Calibration] yaw: '${yawDeg}deg', pitch: '${pitchDeg}deg'`,
+        'color: #D4AF37; font-weight: bold; font-size: 14px;'
+      );
+    });
+  };
 
   const handleImageClickCoordLogger = (e) => {
     const rect = e.target.getBoundingClientRect();
@@ -115,7 +207,7 @@ export default function VirtualTour({ className = "" }) {
     const y = e.clientY - rect.top;
     const xPercent = ((x / rect.width) * 100).toFixed(2);
     const yPercent = ((y / rect.height) * 100).toFixed(2);
-    
+
     console.log(`Node Coordinate -> top: '${yPercent}%', left: '${xPercent}%'`);
     alert(`Node Target Coordinates copied to console!\nTop: ${yPercent}%\nLeft: ${xPercent}%\n\nPaste these replacing the placeholder coordinates in VirtualTour.jsx NODES object.`);
   };
@@ -162,17 +254,17 @@ export default function VirtualTour({ className = "" }) {
 
         {/* Aerial Image Container */}
         <div className="flex-1 w-full h-full relative flex items-center justify-center p-2 sm:p-4">
-          <div className="relative w-full h-full flex items-center justify-center">
-            <img 
-              src="/images/SmartVirtualTour/SPUS_aerial_view.png" 
-              alt="SPUS Aerial View" 
-              className="vt-aerial-img max-h-full w-auto h-auto object-contain shadow-lg rounded-xl cursor-crosshair border border-gray-300"
+          <div className="relative inline-block max-w-full max-h-full">
+            <img
+              src="/images/SmartVirtualTour/SPUS_aerial_view.png"
+              alt="SPUS Aerial View"
+              className="vt-aerial-img max-h-[75vh] sm:max-h-[80vh] w-auto h-auto object-contain shadow-lg rounded-xl cursor-crosshair border border-gray-300 block"
               onClick={handleContainerTap}
             />
 
             {/* Render interactive nodes */}
             {Object.values(NODES).map(node => (
-              <div 
+              <div
                 key={node.id}
                 className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group cursor-pointer z-10"
                 style={{ top: node.top, left: node.left }}
@@ -190,7 +282,7 @@ export default function VirtualTour({ className = "" }) {
 
                 {/* Info Tooltip Hook into Hover */}
                 <div className={`
-                  vt-tooltip absolute top-8 sm:top-9 w-40 sm:w-48 bg-white/95 backdrop-blur shadow-xl rounded-xl p-2.5 sm:p-3 border border-gray-200/80 
+                  vt-tooltip absolute top-8 sm:top-9 w-40 sm:w-48 bg-white/95 backdrop-blur shadow-xl rounded-xl p-2.5 sm:p-3 border border-gray-200/80
                   transition-all duration-200 ease-out origin-top pointer-events-none z-20
                   ${(hoveredNode === node.id || tappedNode === node.id) ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}
                 `}>
@@ -222,14 +314,17 @@ export default function VirtualTour({ className = "" }) {
         <span className="vt-header-subtitle text-sm font-semibold text-gray-800">{currentNode?.name}</span>
       </div>
 
-      <button 
-        className="vt-back-btn absolute bottom-3 left-3 z-10 bg-white shadow py-2 px-3 sm:px-4 rounded-xl font-bold flex items-center gap-2 hover:bg-gray-50 border border-gray-200 text-sm"
+      <button
+        className="vt-back-btn absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-white/90 backdrop-blur shadow-lg py-2 px-4 sm:px-6 rounded-2xl font-bold flex items-center gap-2 hover:bg-white hover:scale-105 border border-spus-gold/30 text-spus-green text-sm transition-all active:scale-95 group"
         onClick={() => setViewMode('aerial')}
       >
-        <span>🔙</span> <span className="vt-back-label">Back to Aerial View</span>
+        <span className="group-hover:rotate-[-10deg] transition-transform">🔙</span> 
+        <span className="vt-back-label">Back to Aerial View</span>
       </button>
-      
+
+      {/* key={currentNodeId} forces a clean remount when navigating between nodes */}
       <ReactPhotoSphereViewer
+        key={currentNodeId}
         src={currentNode?.panorama}
         height="100%"
         width="100%"
